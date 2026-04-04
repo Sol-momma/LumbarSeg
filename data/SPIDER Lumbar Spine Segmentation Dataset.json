@@ -1,0 +1,413 @@
+{
+  "access": {
+    "embargo": {
+      "active": false,
+      "reason": null
+    },
+    "files": "public",
+    "record": "public",
+    "status": "open"
+  },
+  "created": "2023-11-20T11:15:26.192149+00:00",
+  "custom_fields": {},
+  "deletion_status": {
+    "is_deleted": false,
+    "status": "P"
+  },
+  "files": {
+    "count": 4,
+    "enabled": true,
+    "entries": {
+      "images.zip": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:7a9fa44aac0c72e2937bdef62cff88db",
+        "ext": "zip",
+        "id": "439080c4-f4be-47b7-968e-ac218b2fce29",
+        "key": "images.zip",
+        "links": {
+          "content": "https://zenodo.org/api/records/10159290/files/images.zip/content",
+          "self": "https://zenodo.org/api/records/10159290/files/images.zip"
+        },
+        "metadata": null,
+        "mimetype": "application/zip",
+        "size": 3700562886,
+        "storage_class": "L"
+      },
+      "masks.zip": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:49861ff25a0108b3b69d0ce808ae51dc",
+        "ext": "zip",
+        "id": "f44c8585-68e7-4cf8-bd12-d3a40b53bbde",
+        "key": "masks.zip",
+        "links": {
+          "content": "https://zenodo.org/api/records/10159290/files/masks.zip/content",
+          "self": "https://zenodo.org/api/records/10159290/files/masks.zip"
+        },
+        "metadata": null,
+        "mimetype": "application/zip",
+        "size": 58222897,
+        "storage_class": "L"
+      },
+      "overview.csv": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:f9a808d2cf67844baa32114a1a769fde",
+        "ext": "csv",
+        "id": "4bc1ccd0-2cd5-4608-90a7-fad02947545d",
+        "key": "overview.csv",
+        "links": {
+          "content": "https://zenodo.org/api/records/10159290/files/overview.csv/content",
+          "self": "https://zenodo.org/api/records/10159290/files/overview.csv"
+        },
+        "metadata": null,
+        "mimetype": "text/csv",
+        "size": 119856,
+        "storage_class": "L"
+      },
+      "radiological_gradings.csv": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:a5b7a6ad7fb4daa0bfa650b716f026f6",
+        "ext": "csv",
+        "id": "a4114f70-3d1a-4076-9f77-197bcc32592a",
+        "key": "radiological_gradings.csv",
+        "links": {
+          "content": "https://zenodo.org/api/records/10159290/files/radiological_gradings.csv/content",
+          "self": "https://zenodo.org/api/records/10159290/files/radiological_gradings.csv"
+        },
+        "metadata": null,
+        "mimetype": "text/csv",
+        "size": 34417,
+        "storage_class": "L"
+      }
+    },
+    "order": [],
+    "total_bytes": 3758940056
+  },
+  "id": "10159290",
+  "is_draft": false,
+  "is_published": true,
+  "links": {
+    "access": "https://zenodo.org/api/records/10159290/access",
+    "access_grants": "https://zenodo.org/api/records/10159290/access/grants",
+    "access_links": "https://zenodo.org/api/records/10159290/access/links",
+    "access_request": "https://zenodo.org/api/records/10159290/access/request",
+    "access_users": "https://zenodo.org/api/records/10159290/access/users",
+    "archive": "https://zenodo.org/api/records/10159290/files-archive",
+    "archive_media": "https://zenodo.org/api/records/10159290/media-files-archive",
+    "communities": "https://zenodo.org/api/records/10159290/communities",
+    "communities-suggestions": "https://zenodo.org/api/records/10159290/communities-suggestions",
+    "doi": "https://doi.org/10.5281/zenodo.10159290",
+    "draft": "https://zenodo.org/api/records/10159290/draft",
+    "file_modification": "https://zenodo.org/api/records/10159290/file-modification",
+    "files": "https://zenodo.org/api/records/10159290/files",
+    "latest": "https://zenodo.org/api/records/10159290/versions/latest",
+    "latest_html": "https://zenodo.org/records/10159290/latest",
+    "media_files": "https://zenodo.org/api/records/10159290/media-files",
+    "parent": "https://zenodo.org/api/records/8009679",
+    "parent_doi": "https://doi.org/10.5281/zenodo.8009679",
+    "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.8009679",
+    "parent_html": "https://zenodo.org/records/8009679",
+    "preview_html": "https://zenodo.org/records/10159290?preview=1",
+    "request_deletion": "https://zenodo.org/api/records/10159290/request-deletion",
+    "requests": "https://zenodo.org/api/records/10159290/requests",
+    "reserve_doi": "https://zenodo.org/api/records/10159290/draft/pids/doi",
+    "self": "https://zenodo.org/api/records/10159290",
+    "self_doi": "https://doi.org/10.5281/zenodo.10159290",
+    "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.10159290",
+    "self_html": "https://zenodo.org/records/10159290",
+    "self_iiif_manifest": "https://zenodo.org/api/iiif/record:10159290/manifest",
+    "self_iiif_sequence": "https://zenodo.org/api/iiif/record:10159290/sequence/default",
+    "versions": "https://zenodo.org/api/records/10159290/versions"
+  },
+  "media_files": {
+    "count": 0,
+    "enabled": false,
+    "entries": {},
+    "order": [],
+    "total_bytes": 0
+  },
+  "metadata": {
+    "creators": [
+      {
+        "affiliations": [
+          {
+            "name": "Radboudumc"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Jasper Willem van der Graaf",
+          "identifiers": [
+            {
+              "identifier": "0000-0001-8684-5175",
+              "scheme": "orcid"
+            }
+          ],
+          "name": "Jasper Willem van der Graaf",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Radboudumc"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Miranda L. van Hooff",
+          "name": "Miranda L. van Hooff",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Radboudumc"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Constantinus F. M. Buckens",
+          "name": "Constantinus F. M. Buckens",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Jeroen Bosch Hospital"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Matthieu Rutten",
+          "name": "Matthieu Rutten",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Rijnstate Hospital"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Job L. C. van Susante",
+          "name": "Job L. C. van Susante",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Sint Maartenskliniek"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Robert Jan Kroeze",
+          "name": "Robert Jan Kroeze",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Radboudumc"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Marinus de Kleuver",
+          "name": "Marinus de Kleuver",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Radboudumc"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Bram van Ginneken",
+          "identifiers": [
+            {
+              "identifier": "0000-0003-2028-8972",
+              "scheme": "orcid"
+            }
+          ],
+          "name": "Bram van Ginneken",
+          "type": "personal"
+        }
+      },
+      {
+        "affiliations": [
+          {
+            "name": "Radboudumc"
+          }
+        ],
+        "person_or_org": {
+          "family_name": "Nikolas Lessmann",
+          "name": "Nikolas Lessmann",
+          "type": "personal"
+        }
+      }
+    ],
+    "description": "<p>This is a large publicly available multi-center lumbar spine magnetic resonance imaging (MRI) dataset with reference segmentations of vertebrae, intervertebral discs (IVDs), and spinal canal. The dataset&nbsp;includes 447&nbsp;sagittal T1 and T2 MRI series from 218&nbsp;studies of 218 patients with a history of low back pain. The data was collected from four different hospitals. There is an additional&nbsp;hidden test set, not available here, used in the accompanying SPIDER challenge on spider.grand-challenge.org. We share this data&nbsp;to encourage wider participation and collaboration in the field of spine segmentation, and ultimately improve the diagnostic value of lumbar spine MRI.</p>\n<p>Which MRI studies are assigned to the training and validation sets can be found in the overview file. This file also provides the biological sex for all patients and the age for the patients for which this was available. It also includes a number of scanner and acquisition parameters for each individual MRI study. The dataset also comes with radiological gradings found in a separate file for the following degenerative changes:</p>\n<p>1.&ensp;&ensp;&ensp;&ensp;Modic changes (type I, II or III)</p>\n<p>2.&ensp;&ensp;&ensp;&ensp;Upper and lower endplate changes / Schmorl nodes (binary)</p>\n<p>3.&ensp;&ensp;&ensp;&ensp;Spondylolisthesis (binary)</p>\n<p>4.&ensp;&ensp;&ensp;&ensp;Disc herniation (binary)</p>\n<p>5.&ensp;&ensp;&ensp;&ensp;Disc narrowing (binary)</p>\n<p>6.&ensp;&ensp;&ensp;&ensp;Disc bulging (binary)</p>\n<p>7.&ensp;&ensp;&ensp;&ensp;Pfirrman grade (grade 1 to 5).&nbsp;</p>\n<p>All radiological gradings are provided per IVD level.</p>\n<div>This dataset, and the associated public benchmark, are described in this paper: <a href=\"https://www.nature.com/articles/s41597-024-03090-w\" target=\"_blank\" rel=\"noopener\">https://www.nature.com/articles/s41597-024-03090-w</a></div>\n<div>The public segmenation challenge can be found here: <a href=\"https://spider.grand-challenge.org/\" target=\"_blank\" rel=\"noopener\">https://spider.grand-challenge.org/</a></div>\n<div>&nbsp;</div>\n<div>When using this dataset, please cite this dataset with the correct DOI, and also cite the afformentioned paper.</div>",
+    "languages": [
+      {
+        "id": "eng",
+        "title": {
+          "en": "English"
+        }
+      }
+    ],
+    "publication_date": "2023-11-20",
+    "publisher": "Zenodo",
+    "related_identifiers": [
+      {
+        "identifier": "10.1038/s41597-024-03090-w",
+        "relation_type": {
+          "id": "isdescribedby",
+          "title": {
+            "de": "Wird beschrieben von",
+            "en": "Is described by"
+          }
+        },
+        "resource_type": {
+          "id": "publication",
+          "title": {
+            "de": "Publikation",
+            "en": "Publication"
+          }
+        },
+        "scheme": "doi"
+      }
+    ],
+    "resource_type": {
+      "id": "dataset",
+      "title": {
+        "de": "Datensatz",
+        "en": "Dataset"
+      }
+    },
+    "rights": [
+      {
+        "description": {
+          "en": "The Creative Commons Attribution license allows re-distribution and re-use of a licensed work on the condition that the creator is appropriately credited."
+        },
+        "icon": "cc-by-icon",
+        "id": "cc-by-4.0",
+        "props": {
+          "scheme": "spdx",
+          "url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        },
+        "title": {
+          "en": "Creative Commons Attribution 4.0 International"
+        }
+      }
+    ],
+    "subjects": [
+      {
+        "subject": "MRI, low back pain, medical imaging, segmentation, lumbar spine"
+      }
+    ],
+    "title": "SPIDER - Lumbar spine segmentation in MR images: a dataset and a public benchmark"
+  },
+  "parent": {
+    "access": {
+      "owned_by": {
+        "user": "49397"
+      },
+      "settings": {
+        "accept_conditions_text": null,
+        "allow_guest_requests": false,
+        "allow_user_requests": false,
+        "secret_link_expiration": 0
+      }
+    },
+    "communities": {
+      "default": "d268b7d2-a37a-4355-9983-5818a7bf4c4a",
+      "entries": [
+        {
+          "access": {
+            "member_policy": "open",
+            "members_visibility": "public",
+            "record_submission_policy": "open",
+            "review_policy": "open",
+            "visibility": "public"
+          },
+          "children": {
+            "allow": false
+          },
+          "created": "2019-03-16T08:37:12.623394+00:00",
+          "custom_fields": {},
+          "deletion_status": {
+            "is_deleted": false,
+            "status": "P"
+          },
+          "id": "d268b7d2-a37a-4355-9983-5818a7bf4c4a",
+          "links": {},
+          "metadata": {
+            "curation_policy": "<p>We aim to include any uploads related to challenges on the grand-challenge.org platform.</p>\r\n",
+            "description": "This community contains data collections that are linked to challenges and other sites on the website grand-challenge.org.",
+            "page": "",
+            "title": "grand-challenge.org"
+          },
+          "revision_id": 0,
+          "slug": "grand-challenge",
+          "updated": "2019-03-16T08:37:12.623409+00:00"
+        }
+      ],
+      "ids": [
+        "d268b7d2-a37a-4355-9983-5818a7bf4c4a"
+      ]
+    },
+    "id": "8009679",
+    "pids": {
+      "doi": {
+        "client": "datacite",
+        "identifier": "10.5281/zenodo.8009679",
+        "provider": "datacite"
+      }
+    }
+  },
+  "pids": {
+    "doi": {
+      "client": "datacite",
+      "identifier": "10.5281/zenodo.10159290",
+      "provider": "datacite"
+    },
+    "oai": {
+      "identifier": "oai:zenodo.org:10159290",
+      "provider": "oai"
+    }
+  },
+  "revision_id": 6,
+  "stats": {
+    "all_versions": {
+      "data_volume": 52653563617264.0,
+      "downloads": 29373,
+      "unique_downloads": 18194,
+      "unique_views": 19115,
+      "views": 21482
+    },
+    "this_version": {
+      "data_volume": 39261634599004.0,
+      "downloads": 24401,
+      "unique_downloads": 15786,
+      "unique_views": 13805,
+      "views": 15739
+    }
+  },
+  "status": "published",
+  "swh": {},
+  "updated": "2024-03-05T10:06:04.693266+00:00",
+  "versions": {
+    "index": 4,
+    "is_latest": true
+  }
+}
