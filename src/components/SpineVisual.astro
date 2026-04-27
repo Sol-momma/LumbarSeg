@@ -10,13 +10,19 @@ const labels = {
     vertebrae: "椎体 Vertebrae",
     canal: "脊柱管 Spinal Canal",
     discs: "椎間板 IVDs",
-    aria: "椎体、脊柱管、椎間板のセグメンテーション模式図",
+    input: "MRI入力",
+    model: "Modified U-Net",
+    output: "予測マスク",
+    aria: "MRI入力からU-Netを通してセグメンテーションマスクを出力する流れの模式図",
   },
   en: {
     vertebrae: "Vertebrae",
     canal: "Spinal Canal",
     discs: "Intervertebral Discs",
-    aria: "Segmentation diagram showing vertebrae, spinal canal, and intervertebral discs",
+    input: "MRI input",
+    model: "Modified U-Net",
+    output: "Predicted mask",
+    aria: "Pipeline diagram showing MRI input, U-Net inference, and predicted segmentation mask",
   },
 } as const;
 
@@ -24,23 +30,35 @@ const t = labels[language];
 ---
 
 <div class="visual reveal" aria-label={t.aria}>
-  <div class="scan-label">T2 SPACE segmentation map</div>
-  <div class="spine-map">
-    <div class="vertebrae-stack" aria-hidden="true">
-      <div class="vertebra" style="--shift: 16px"></div>
-      <div class="vertebra" style="--shift: 3px"></div>
-      <div class="vertebra" style="--shift: -8px"></div>
-      <div class="vertebra" style="--shift: -2px"></div>
-      <div class="vertebra" style="--shift: 10px"></div>
+  <div class="visual-title">T2 SPACE segmentation workflow</div>
+  <div class="segmentation-flow">
+    <div class="scan-panel">
+      <span>{t.input}</span>
+      <div class="mri-slice" aria-hidden="true">
+        <i class="scan-bone b1"></i>
+        <i class="scan-bone b2"></i>
+        <i class="scan-bone b3"></i>
+        <i class="scan-bone b4"></i>
+        <i class="scan-disc d1"></i>
+        <i class="scan-disc d2"></i>
+        <i class="scan-disc d3"></i>
+      </div>
     </div>
-    <div class="canal" aria-hidden="true"></div>
-    <div class="disc-stack" aria-hidden="true">
-      <div class="disc" style="--shift: -6px"></div>
-      <div class="disc" style="--shift: 8px"></div>
-      <div class="disc" style="--shift: 0"></div>
-      <div class="disc" style="--shift: 14px"></div>
-      <div class="disc" style="--shift: 2px"></div>
-      <div class="disc" style="--shift: -10px"></div>
+    <div class="model-node">
+      <strong>{t.model}</strong>
+      <small>softmax 4 classes</small>
+    </div>
+    <div class="scan-panel output-panel">
+      <span>{t.output}</span>
+      <div class="mri-slice mask-slice" aria-hidden="true">
+        <i class="mask vertebra-mask m1"></i>
+        <i class="mask vertebra-mask m2"></i>
+        <i class="mask vertebra-mask m3"></i>
+        <i class="mask canal-mask"></i>
+        <i class="mask disc-mask dm1"></i>
+        <i class="mask disc-mask dm2"></i>
+        <i class="mask disc-mask dm3"></i>
+      </div>
     </div>
   </div>
   <div class="legend">
