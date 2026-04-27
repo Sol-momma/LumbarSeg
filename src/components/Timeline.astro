@@ -1,0 +1,27 @@
+---
+interface TimelineItem {
+  stage: string;
+  title: string;
+  text: string;
+}
+
+interface Props {
+  items: TimelineItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="timeline">
+  {
+    items.map((item) => (
+      <div class="timeline-item">
+        <time>{item.stage}</time>
+        <div>
+          <h3>{item.title}</h3>
+          <p>{item.text}</p>
+        </div>
+      </div>
+    ))
+  }
+</div>

@@ -1,0 +1,26 @@
+---
+interface FlowItem {
+  title: string;
+  text: string;
+}
+
+interface Props {
+  items: FlowItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="flow">
+  {
+    items.map((item, index) => (
+      <div class="flow-step">
+        <span class="num">{index + 1}</span>
+        <div>
+          <h3>{item.title}</h3>
+          <p>{item.text}</p>
+        </div>
+      </div>
+    ))
+  }
+</div>

@@ -1,0 +1,27 @@
+---
+interface Term {
+  key: string;
+  title: string;
+  text: string;
+}
+
+interface Props {
+  terms: Term[];
+}
+
+const { terms } = Astro.props;
+---
+
+<div class="glossary-tools">
+  <input class="search" id="termSearch" type="search" placeholder="例: Dice, U-Net, T2 SPACE, Focal Loss" />
+</div>
+<div class="glossary" id="glossaryList">
+  {
+    terms.map((term) => (
+      <article class="term" data-term={term.key}>
+        <h3>{term.title}</h3>
+        <p>{term.text}</p>
+      </article>
+    ))
+  }
+</div>

@@ -1,0 +1,24 @@
+---
+interface ModelBlock {
+  mark: string;
+  title: string;
+  text: string;
+}
+
+interface Props {
+  blocks: ModelBlock[];
+}
+
+const { blocks } = Astro.props;
+---
+
+<div class="model-board">
+  {
+    blocks.map((block) => (
+      <div class="model-block" data-mark={block.mark}>
+        <h3>{block.title}</h3>
+        <p>{block.text}</p>
+      </div>
+    ))
+  }
+</div>

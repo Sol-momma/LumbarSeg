@@ -1,0 +1,23 @@
+---
+interface NoteItem {
+  title: string;
+  text: string;
+}
+
+interface Props {
+  notes: NoteItem[];
+}
+
+const { notes } = Astro.props;
+---
+
+<div class="metric-notes">
+  {
+    notes.map((note) => (
+      <div class="note">
+        <h3>{note.title}</h3>
+        <p>{note.text}</p>
+      </div>
+    ))
+  }
+</div>

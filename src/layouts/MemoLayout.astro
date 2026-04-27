@@ -1,0 +1,133 @@
+---
+import SpineVisual from "../components/SpineVisual.astro";
+import "../styles/site.css";
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+const navItems = [
+  { id: "overview", label: "概要" },
+  { id: "resources", label: "資料" },
+  { id: "important", label: "重要情報" },
+  { id: "data", label: "データと前処理" },
+  { id: "model", label: "モデル" },
+  { id: "metrics", label: "精度" },
+  { id: "glossary", label: "用語" },
+  { id: "todo", label: "卒研メモ" },
+];
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="progress" aria-hidden="true"></div>
+    <div class="shell">
+      <aside class="sidebar" aria-label="ページ内ナビゲーション">
+        <div class="brand">
+          <small>Research Memo</small>
+          <strong>腰椎MRI<br />セグメンテーション</strong>
+        </div>
+        <ol class="nav">
+          {
+            navItems.map((item, index) => (
+              <li>
+                <a href={`#${item.id}`}>
+                  {item.label}
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+        <p class="sidebar-note">
+          Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。
+        </p>
+      </aside>
+
+      <main>
+        <header class="hero" id="overview">
+          <div class="reveal">
+            <span class="eyebrow">Ahmed et al. 2025 / Modified U-Net</span>
+            <h1>腰椎MRIを4クラスに自動分割する研究メモ</h1>
+            <p class="lead">
+              MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。
+              論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#important">重要情報を見る</a>
+              <a class="button" href="#resources">PDFとURLを見る</a>
+              <a class="button" href="#glossary">難しい単語を確認</a>
+            </div>
+          </div>
+          <SpineVisual />
+        </header>
+
+        <slot />
+      </main>
+    </div>
+
+    <script>
+      const progress = document.querySelector(".progress");
+      const links = [...document.querySelectorAll(".nav a")];
+      const sections = links
+        .map((link) => document.querySelector(link.getAttribute("href") || ""))
+        .filter(Boolean);
+
+      function updateProgress() {
+        const max = document.documentElement.scrollHeight - innerHeight;
+        const ratio = max > 0 ? scrollY / max : 0;
+        if (progress) {
+          progress.style.width = `${Math.min(100, Math.max(0, ratio * 100))}%`;
+        }
+      }
+
+      const sectionObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const id = `#${entry.target.id}`;
+            links.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === id));
+          });
+        },
+        { rootMargin: "-35% 0px -55% 0px", threshold: 0.01 }
+      );
+
+      sections.forEach((section) => sectionObserver.observe(section));
+
+      const revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) entry.target.classList.add("visible");
+          });
+        },
+        { threshold: 0.12 }
+      );
+
+      document.querySelectorAll(".reveal").forEach((node) => revealObserver.observe(node));
+
+      const search = document.querySelector("#termSearch");
+      const terms = [...document.querySelectorAll(".term")];
+      search?.addEventListener("input", () => {
+        const query = search.value.trim().toLowerCase();
+        terms.forEach((term) => {
+          const text = `${term.getAttribute("data-term")} ${term.textContent}`.toLowerCase();
+          term.hidden = query.length > 0 && !text.includes(query);
+        });
+      });
+
+      addEventListener("scroll", updateProgress, { passive: true });
+      addEventListener("resize", updateProgress);
+      updateProgress();
+    </script>
+  </body>
+</html>

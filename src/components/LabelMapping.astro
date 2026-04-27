@@ -1,0 +1,27 @@
+---
+interface MappingRow {
+  source: string;
+  target: string;
+}
+
+interface Props {
+  rows: MappingRow[];
+}
+
+const { rows } = Astro.props;
+---
+
+<div class="mapping">
+  <h3>SPIDERラベルの統合</h3>
+  {
+    rows.map((row) => (
+      <div class="map-row">
+        <span class="tag">{row.source}</span>
+        <span>{row.target}</span>
+      </div>
+    ))
+  }
+  <p>
+    ポイントは、解剖学的な個体番号を当てるのではなく、臨床的に見たい構造カテゴリを正確に塗り分けること。
+  </p>
+</div>
