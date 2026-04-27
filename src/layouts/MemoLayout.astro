@@ -30,8 +30,7 @@ const copy = {
         note: "Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。",
         eyebrow: "Ahmed et al. 2025 / Modified U-Net",
         title: "腰椎MRIを4クラスに自動分割する研究メモ",
-        lead:
-          "MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。",
+        lead: "MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。",
         actions: {
           primary: "重要情報を見る",
           resources: "PDFとURLを見る",
@@ -53,8 +52,7 @@ const copy = {
         note: "論文を理解しながら、自分の言葉で疑問・気づき・次の行動を残すためのページ。",
         eyebrow: "Study Notes / Understanding First",
         title: "理解を深めるための研究メモ",
-        lead:
-          "このページは、論文の内容やノートブックの処理を自分で説明できるようにするための記録場所。完成原稿ではなく、理解の途中経過を残すために使う。",
+        lead: "このページは、論文の内容やノートブックの処理を自分で説明できるようにするための記録場所。完成原稿ではなく、理解の途中経過を残すために使う。",
         actions: {
           primary: "今の焦点を見る",
           resources: "論文メモへ戻る",
@@ -85,8 +83,7 @@ const copy = {
         note: "English presentation version of the Ahmed et al. (2025) paper memo.",
         eyebrow: "Ahmed et al. 2025 / Modified U-Net",
         title: "Four-Class Lumbar MRI Segmentation",
-        lead:
-          "This page summarizes a deep learning approach that classifies each MRI pixel into background, vertebrae, spinal canal, or intervertebral discs. The key idea is the combination of careful preprocessing, a modified U-Net, and a Combined Loss.",
+        lead: "This page summarizes a deep learning approach that classifies each MRI pixel into background, vertebrae, spinal canal, or intervertebral discs. The key idea is the combination of careful preprocessing, a modified U-Net, and a Combined Loss.",
         actions: {
           primary: "Key facts",
           resources: "PDF and links",
@@ -108,8 +105,7 @@ const copy = {
         note: "A workspace for questions, understanding notes, and next actions while reading the paper.",
         eyebrow: "Study Notes / Understanding First",
         title: "Research Notes for Learning",
-        lead:
-          "Use this page to write what you understand, what still feels unclear, and what you want to check next. It is meant to support learning, not polished presentation output.",
+        lead: "Use this page to write what you understand, what still feels unclear, and what you want to check next. It is meant to support learning, not polished presentation output.",
         actions: {
           primary: "Current focus",
           resources: "Back to memo",
@@ -150,16 +146,28 @@ const pageCopy = t.pages[page];
           <strong>{t.brand[0]}<br />{t.brand[1]}</strong>
         </div>
         <div class="page-links" aria-label="Page switcher">
-          <a class:list={["page-link", { active: page === "memo" }]} href={t.pageLinks.memo.href}>
+          <a
+            class:list={["page-link", { active: page === "memo" }]}
+            href={t.pageLinks.memo.href}
+          >
             {t.pageLinks.memo.label}
           </a>
-          <a class:list={["page-link", { active: page === "notes" }]} href={t.pageLinks.notes.href}>
+          <a
+            class:list={["page-link", { active: page === "notes" }]}
+            href={t.pageLinks.notes.href}
+          >
             {t.pageLinks.notes.label}
           </a>
         </div>
         <div class="language-tabs" aria-label="Language switcher">
-          <a class:list={["language-tab", { active: language === "ja" }]} href={homeHref}>日本語</a>
-          <a class:list={["language-tab", { active: language === "en" }]} href={englishHref}>English</a>
+          <a
+            class:list={["language-tab", { active: language === "ja" }]}
+            href={homeHref}>日本語</a
+          >
+          <a
+            class:list={["language-tab", { active: language === "en" }]}
+            href={englishHref}>English</a
+          >
         </div>
         <ol class="nav">
           {
@@ -185,10 +193,26 @@ const pageCopy = t.pages[page];
             <h1>{pageCopy.title}</h1>
             <p class="lead">{pageCopy.lead}</p>
             <div class="hero-actions">
-              <a class="button primary" href={page === "memo" ? "#important" : "#focus"}>{pageCopy.actions.primary}</a>
-              <a class="button" href={page === "memo" ? "#resources" : homeHref}>{pageCopy.actions.resources}</a>
-              <a class="button" href={page === "memo" ? "#glossary" : "#questions"}>{pageCopy.actions.glossary}</a>
-              {page === "memo" && <a class="button" href={notesHref}>{pageCopy.actions.notes}</a>}
+              <a
+                class="button primary"
+                href={page === "memo" ? "#important" : "#focus"}
+                >{pageCopy.actions.primary}</a
+              >
+              <a class="button" href={page === "memo" ? "#resources" : homeHref}
+                >{pageCopy.actions.resources}</a
+              >
+              <a
+                class="button"
+                href={page === "memo" ? "#glossary" : "#questions"}
+                >{pageCopy.actions.glossary}</a
+              >
+              {
+                page === "memo" && (
+                  <a class="button" href={notesHref}>
+                    {pageCopy.actions.notes}
+                  </a>
+                )
+              }
             </div>
           </div>
           <SpineVisual language={language} />
@@ -218,10 +242,12 @@ const pageCopy = t.pages[page];
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
             const id = `#${entry.target.id}`;
-            links.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === id));
+            links.forEach((link) =>
+              link.classList.toggle("active", link.getAttribute("href") === id),
+            );
           });
         },
-        { rootMargin: "-35% 0px -55% 0px", threshold: 0.01 }
+        { rootMargin: "-35% 0px -55% 0px", threshold: 0.01 },
       );
 
       sections.forEach((section) => sectionObserver.observe(section));
@@ -232,17 +258,20 @@ const pageCopy = t.pages[page];
             if (entry.isIntersecting) entry.target.classList.add("visible");
           });
         },
-        { threshold: 0.12 }
+        { threshold: 0.12 },
       );
 
-      document.querySelectorAll(".reveal").forEach((node) => revealObserver.observe(node));
+      document
+        .querySelectorAll(".reveal")
+        .forEach((node) => revealObserver.observe(node));
 
       const search = document.querySelector("#termSearch");
       const terms = [...document.querySelectorAll(".term")];
       search?.addEventListener("input", () => {
         const query = search.value.trim().toLowerCase();
         terms.forEach((term) => {
-          const text = `${term.getAttribute("data-term")} ${term.textContent}`.toLowerCase();
+          const text =
+            `${term.getAttribute("data-term")} ${term.textContent}`.toLowerCase();
           term.hidden = query.length > 0 && !text.includes(query);
         });
       });

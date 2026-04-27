@@ -32,22 +32,45 @@ const t = copy[language];
   <div class="pdf-panel">
     <div class="pdf-head">
       <span>Main Paper PDF</span>
-      <a class="button" href={paperPdf} target="_blank" rel="noopener noreferrer">{t.openPdf}</a>
+      <a
+        class="button"
+        href={paperPdf}
+        target="_blank"
+        rel="noopener noreferrer">{t.openPdf}</a
+      >
     </div>
-    <iframe class="pdf-frame" title="Ahmed et al. 2025 paper PDF" src={`${paperPdf}#toolbar=1`}></iframe>
+    <iframe
+      class="pdf-frame"
+      title="Ahmed et al. 2025 paper PDF"
+      src={`${paperPdf}#toolbar=1`}></iframe>
   </div>
   <aside class="resource-panel" aria-label={t.linksLabel}>
-    <a class="resource-link" href="https://www.sciencedirect.com/science/article/pii/S2666827025000180" target="_blank" rel="noopener noreferrer">
+    <a
+      class="resource-link"
+      href="https://www.sciencedirect.com/science/article/pii/S2666827025000180"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <small>ScienceDirect</small>
       <strong>Pioneering Precision in Lumbar Spine MRI Segmentation</strong>
       <span>{t.sourceNote}</span>
     </a>
-    <a class="resource-link" href={paperPdf} target="_blank" rel="noopener noreferrer">
+    <a
+      class="resource-link"
+      href={paperPdf}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <small>Local PDF</small>
       <strong>paper.pdf</strong>
       <span>{t.mainPdfNote}</span>
     </a>
-    <a class="resource-link" href={datasetPdf} target="_blank" rel="noopener noreferrer">
+    <a
+      class="resource-link"
+      href={datasetPdf}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <small>Dataset PDF</small>
       <strong>Dataset_Paper.pdf</strong>
       <span>{t.datasetNote}</span>

@@ -8,12 +8,12 @@
 
 **タスク**: MRI画像から以下の4クラスをピクセル単位で自動セグメンテーション
 
-| クラス | 構造 | 臨床的意義 |
-|---|---|---|
-| 0 | 背景 (Background) | — |
-| 1 | 椎体 (Vertebrae) | 骨折・変形の評価 |
-| 2 | 脊柱管 (Spinal Canal) | 狭窄症の診断 |
-| 3 | 椎間板 (IVDs) | ヘルニア・変性の評価 |
+| クラス | 構造                  | 臨床的意義           |
+| ------ | --------------------- | -------------------- |
+| 0      | 背景 (Background)     | —                    |
+| 1      | 椎体 (Vertebrae)      | 骨折・変形の評価     |
+| 2      | 脊柱管 (Spinal Canal) | 狭窄症の診断         |
+| 3      | 椎間板 (IVDs)         | ヘルニア・変性の評価 |
 
 ## 手法
 
@@ -32,30 +32,32 @@
 ## プロジェクト目標
 
 ### Stage 1: 論文の再現
+
 論文と同等の精度を達成する。
 
-| 構造 | 論文 Dice | 比較 (nn-UNET) |
-|---|---|---|
-| IVDs | 0.9688 | 0.86 |
-| Vertebrae | 0.9712 | 0.92 |
-| Spinal Canal | 0.9671 | 0.92 |
+| 構造         | 論文 Dice | 比較 (nn-UNET) |
+| ------------ | --------- | -------------- |
+| IVDs         | 0.9688    | 0.86           |
+| Vertebrae    | 0.9712    | 0.92           |
+| Spinal Canal | 0.9671    | 0.92           |
 
 ### Stage 2: 精度の改良
+
 アルゴリズムの改良により Dice係数をさらに向上させる。
 
 ## ドキュメント
 
-| ドキュメント | 内容 |
-|---|---|
-| [論文概要・結果サマリ](docs/overview.md) | 論文の要点、データセット、結果の数値まとめ |
-| [プロジェクト目標・評価指標](docs/project_goals.md) | Stage 1/2 の目標、T1/T2/T2 SPACE解説、Dice等の指標説明 |
-| [教授向け発表アウトライン](docs/presentation_outline.md) | 15-20分の発表構成、各スライドのポイント |
-| [データ前処理パイプライン](docs/preprocessing.md) | 3D→2D変換、ラベルマッピング、フィルタリング手順 |
-| [モデル構成・損失関数](docs/architecture.md) | Modified U-Net詳細、Focal+Dice Loss数式、学習設定 |
-| [SPIDERデータセット詳細](docs/dataset_spider.md) | 病院別データ、分割、アノテーション方法、ベースライン結果 |
-| [実装計画](docs/implementation_plan.md) | フェーズ分け、技術選定、未確定事項 |
-| [未解決事項](docs/open_questions.md) | 設計判断が必要なポイント、論文の矛盾点 |
-| [よく��る質問 (FAQ)](docs/faq.md) | 発表で想定されるQ&A (データ・モデル・結果・卒プロ) |
+| ドキュメント                                             | 内容                                                     |
+| -------------------------------------------------------- | -------------------------------------------------------- |
+| [論文概要・結果サマリ](docs/overview.md)                 | 論文の要点、データセット、結果の数値まとめ               |
+| [プロジェクト目標・評価指標](docs/project_goals.md)      | Stage 1/2 の目標、T1/T2/T2 SPACE解説、Dice等の指標説明   |
+| [教授向け発表アウトライン](docs/presentation_outline.md) | 15-20分の発表構成、各スライドのポイント                  |
+| [データ前処理パイプライン](docs/preprocessing.md)        | 3D→2D変換、ラベルマッピング、フィルタリング手順          |
+| [モデル構成・損失関数](docs/architecture.md)             | Modified U-Net詳細、Focal+Dice Loss数式、学習設定        |
+| [SPIDERデータセット詳細](docs/dataset_spider.md)         | 病院別データ、分割、アノテーション方法、ベースライン結果 |
+| [実装計画](docs/implementation_plan.md)                  | フェーズ分け、技術選定、未確定事項                       |
+| [未解決事項](docs/open_questions.md)                     | 設計判断が必要なポイント、論文の矛盾点                   |
+| [よく��る質問 (FAQ)](docs/faq.md)                        | 発表で想定されるQ&A (データ・モデル・結果・卒プロ)       |
 
 ## ディレクトリ構成
 
@@ -124,6 +126,20 @@ npm run build
 npm run preview
 ```
 
+コード整形:
+
+```bash
+npm run format
+```
+
+整形チェックのみ:
+
+```bash
+npm run format:check
+```
+
+- GitHub Actions でも `Prettier` workflow が `main` への push / pull request で走る
+
 ### Colab ノートブックの実行
 
 `spine_segmentation.ipynb` は Astro ではなく、Google Colab で実行する。
@@ -143,6 +159,6 @@ npm run preview
 
 ## 参考論文
 
-1. **本論文**: Ahmed, I. et al. "Pioneering Precision in Lumbar Spine MRI Segmentation with Advanced Deep Learning and Data Enhancement." *Machine Learning with Applications*, Vol.20, 2025.
+1. **本論文**: Ahmed, I. et al. "Pioneering Precision in Lumbar Spine MRI Segmentation with Advanced Deep Learning and Data Enhancement." _Machine Learning with Applications_, Vol.20, 2025.
 
-2. **データセット論文**: van der Graaf, J.W. et al. "Lumbar spine segmentation in MR images: a dataset and a public benchmark." *Nature Scientific Data*, 11:264, 2024.
+2. **データセット論文**: van der Graaf, J.W. et al. "Lumbar spine segmentation in MR images: a dataset and a public benchmark." _Nature Scientific Data_, 11:264, 2024.

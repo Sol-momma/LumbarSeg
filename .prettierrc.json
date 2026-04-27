@@ -1,0 +1,13 @@
+{
+  "plugins": ["prettier-plugin-astro"],
+  "semi": true,
+  "singleQuote": false,
+  "overrides": [
+    {
+      "files": "*.astro",
+      "options": {
+        "parser": "astro"
+      }
+    }
+  ]
+}

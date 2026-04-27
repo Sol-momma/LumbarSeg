@@ -34,7 +34,11 @@
       body {
         margin: 0;
         background:
-          radial-gradient(circle at top left, rgba(0, 143, 122, 0.13), transparent 34rem),
+          radial-gradient(
+            circle at top left,
+            rgba(0, 143, 122, 0.13),
+            transparent 34rem
+          ),
           linear-gradient(135deg, rgba(47, 111, 214, 0.08), transparent 36rem),
           var(--paper);
         color: var(--ink);
@@ -54,7 +58,12 @@
         z-index: 20;
         width: 0;
         height: 4px;
-        background: linear-gradient(90deg, var(--accent), var(--disc), var(--vertebrae));
+        background: linear-gradient(
+          90deg,
+          var(--accent),
+          var(--disc),
+          var(--vertebrae)
+        );
       }
 
       .shell {
@@ -243,8 +252,16 @@
         border-radius: 34px;
         overflow: hidden;
         background:
-          linear-gradient(145deg, rgba(255, 255, 250, 0.78), rgba(219, 232, 225, 0.58)),
-          repeating-linear-gradient(90deg, rgba(24, 32, 29, 0.04) 0 1px, transparent 1px 30px);
+          linear-gradient(
+            145deg,
+            rgba(255, 255, 250, 0.78),
+            rgba(219, 232, 225, 0.58)
+          ),
+          repeating-linear-gradient(
+            90deg,
+            rgba(24, 32, 29, 0.04) 0 1px,
+            transparent 1px 30px
+          );
         box-shadow: var(--shadow);
       }
 
@@ -292,7 +309,11 @@
         height: 58px;
         border-radius: 18px 24px 18px 24px;
         background:
-          linear-gradient(120deg, rgba(214, 75, 59, 0.92), rgba(214, 75, 59, 0.44)),
+          linear-gradient(
+            120deg,
+            rgba(214, 75, 59, 0.92),
+            rgba(214, 75, 59, 0.44)
+          ),
           linear-gradient(90deg, rgba(255, 255, 255, 0.25), transparent);
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
         transform: translateX(var(--shift));
@@ -301,7 +322,11 @@
       .disc {
         height: 34px;
         border-radius: 999px;
-        background: linear-gradient(120deg, rgba(47, 111, 214, 0.9), rgba(47, 111, 214, 0.42));
+        background: linear-gradient(
+          120deg,
+          rgba(47, 111, 214, 0.9),
+          rgba(47, 111, 214, 0.42)
+        );
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
         transform: translateX(var(--shift));
       }
@@ -310,8 +335,16 @@
         height: 330px;
         border-radius: 999px;
         background:
-          linear-gradient(180deg, rgba(41, 168, 117, 0.82), rgba(41, 168, 117, 0.2)),
-          repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 2px, transparent 2px 22px);
+          linear-gradient(
+            180deg,
+            rgba(41, 168, 117, 0.82),
+            rgba(41, 168, 117, 0.2)
+          ),
+          repeating-linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.28) 0 2px,
+            transparent 2px 22px
+          );
         box-shadow:
           inset 0 0 0 1px rgba(255, 255, 255, 0.34),
           0 0 0 12px rgba(41, 168, 117, 0.08);
@@ -889,14 +922,30 @@
           <strong>腰椎MRI<br />セグメンテーション</strong>
         </div>
         <ol class="nav">
-          <li><a href="#overview">概要 <span>01</span></a></li>
-          <li><a href="#resources">資料 <span>02</span></a></li>
-          <li><a href="#important">重要情報 <span>03</span></a></li>
-          <li><a href="#data">データと前処理 <span>04</span></a></li>
-          <li><a href="#model">モデル <span>05</span></a></li>
-          <li><a href="#metrics">精度 <span>06</span></a></li>
-          <li><a href="#glossary">用語 <span>07</span></a></li>
-          <li><a href="#todo">卒研メモ <span>08</span></a></li>
+          <li>
+            <a href="#overview">概要 <span>01</span></a>
+          </li>
+          <li>
+            <a href="#resources">資料 <span>02</span></a>
+          </li>
+          <li>
+            <a href="#important">重要情報 <span>03</span></a>
+          </li>
+          <li>
+            <a href="#data">データと前処理 <span>04</span></a>
+          </li>
+          <li>
+            <a href="#model">モデル <span>05</span></a>
+          </li>
+          <li>
+            <a href="#metrics">精度 <span>06</span></a>
+          </li>
+          <li>
+            <a href="#glossary">用語 <span>07</span></a>
+          </li>
+          <li>
+            <a href="#todo">卒研メモ <span>08</span></a>
+          </li>
         </ol>
         <p class="sidebar-note">
           Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。
@@ -910,7 +959,8 @@
             <h1>腰椎MRIを4クラスに自動分割する研究メモ</h1>
             <p class="lead">
               MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。
-              論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。
+              論文の核心は、前処理、U-Net改良、Combined
+              Lossを組み合わせて高精度なセグメンテーションを実現した点にある。
             </p>
             <div class="hero-actions">
               <a class="button primary" href="#important">重要情報を見る</a>
@@ -918,7 +968,10 @@
               <a class="button" href="#glossary">難しい単語を確認</a>
             </div>
           </div>
-          <div class="visual reveal" aria-label="椎体、脊柱管、椎間板のセグメンテーション模式図">
+          <div
+            class="visual reveal"
+            aria-label="椎体、脊柱管、椎間板のセグメンテーション模式図"
+          >
             <div class="scan-label">T2 SPACE segmentation map</div>
             <div class="spine-map">
               <div class="vertebrae-stack" aria-hidden="true">
@@ -939,9 +992,17 @@
               </div>
             </div>
             <div class="legend">
-              <span><i class="dot" style="--c: var(--vertebrae)"></i>椎体 Vertebrae</span>
-              <span><i class="dot" style="--c: var(--canal)"></i>脊柱管 Spinal Canal</span>
-              <span><i class="dot" style="--c: var(--disc)"></i>椎間板 IVDs</span>
+              <span
+                ><i class="dot" style="--c: var(--vertebrae)"></i>椎体
+                Vertebrae</span
+              >
+              <span
+                ><i class="dot" style="--c: var(--canal)"></i>脊柱管 Spinal
+                Canal</span
+              >
+              <span
+                ><i class="dot" style="--c: var(--disc)"></i>椎間板 IVDs</span
+              >
             </div>
           </div>
         </header>
@@ -949,28 +1010,57 @@
         <section id="resources" class="reveal">
           <div class="section-head">
             <h2>論文PDFとリンク</h2>
-            <p>メイン論文PDFをページ内で確認できるようにし、ScienceDirectの論文ページとSPIDERデータセット論文もすぐ開けるようにした。</p>
+            <p>
+              メイン論文PDFをページ内で確認できるようにし、ScienceDirectの論文ページとSPIDERデータセット論文もすぐ開けるようにした。
+            </p>
           </div>
           <div class="resource-layout">
             <div class="pdf-panel">
               <div class="pdf-head">
                 <span>Main Paper PDF</span>
-                <a class="button" href="../papers/paper.pdf" target="_blank" rel="noopener noreferrer">別タブで開く</a>
+                <a
+                  class="button"
+                  href="../papers/paper.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >別タブで開く</a
+                >
               </div>
-              <iframe class="pdf-frame" title="Ahmed et al. 2025 paper PDF" src="../papers/paper.pdf#toolbar=1"></iframe>
+              <iframe
+                class="pdf-frame"
+                title="Ahmed et al. 2025 paper PDF"
+                src="../papers/paper.pdf#toolbar=1"
+              ></iframe>
             </div>
             <aside class="resource-panel" aria-label="論文資料リンク">
-              <a class="resource-link" href="https://www.sciencedirect.com/science/article/pii/S2666827025000180" target="_blank" rel="noopener noreferrer">
+              <a
+                class="resource-link"
+                href="https://www.sciencedirect.com/science/article/pii/S2666827025000180"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <small>ScienceDirect</small>
-                <strong>Pioneering Precision in Lumbar Spine MRI Segmentation</strong>
+                <strong
+                  >Pioneering Precision in Lumbar Spine MRI Segmentation</strong
+                >
                 <span>出版社ページで概要、DOI、引用情報を確認する。</span>
               </a>
-              <a class="resource-link" href="../papers/paper.pdf" target="_blank" rel="noopener noreferrer">
+              <a
+                class="resource-link"
+                href="../papers/paper.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <small>Local PDF</small>
                 <strong>paper.pdf</strong>
                 <span>このメモの元になっているメイン論文PDF。</span>
               </a>
-              <a class="resource-link" href="../papers/Dataset_Paper.pdf" target="_blank" rel="noopener noreferrer">
+              <a
+                class="resource-link"
+                href="../papers/Dataset_Paper.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <small>Dataset PDF</small>
                 <strong>Dataset_Paper.pdf</strong>
                 <span>SPIDERデータセットの詳細を確認する補助資料。</span>
@@ -982,7 +1072,9 @@
         <section id="important" class="reveal">
           <div class="section-head">
             <h2>重要情報</h2>
-            <p>発表で最初に押さえるべき数字と主張。論文の価値は「高解像度データで高精度」だけでなく、前処理で学習しやすい問題に変換した点にもある。</p>
+            <p>
+              発表で最初に押さえるべき数字と主張。論文の価値は「高解像度データで高精度」だけでなく、前処理で学習しやすい問題に変換した点にもある。
+            </p>
           </div>
           <div class="kpi-grid">
             <div class="kpi">
@@ -1011,7 +1103,10 @@
         <section id="data" class="reveal">
           <div class="section-head">
             <h2>データと前処理</h2>
-            <p>元データは3D MHA形式。論文では2Dスライスに変換し、ラベルを4クラスへ統合してから学習に使う。</p>
+            <p>
+              元データは3D
+              MHA形式。論文では2Dスライスに変換し、ラベルを4クラスへ統合してから学習に使う。
+            </p>
           </div>
           <div class="split">
             <div class="flow">
@@ -1019,37 +1114,55 @@
                 <span class="num">1</span>
                 <div>
                   <h3>3D MHAから2Dスライス抽出</h3>
-                  <p>GPUメモリを抑え、2D U-Netで扱いやすい512×640画像にする。</p>
+                  <p>
+                    GPUメモリを抑え、2D U-Netで扱いやすい512×640画像にする。
+                  </p>
                 </div>
               </div>
               <div class="flow-step">
                 <span class="num">2</span>
                 <div>
                   <h3>16クラス相当のラベルを4クラスへ統合</h3>
-                  <p>個別の椎体番号や椎間板番号ではなく、構造の種類を予測する問題に変換する。</p>
+                  <p>
+                    個別の椎体番号や椎間板番号ではなく、構造の種類を予測する問題に変換する。
+                  </p>
                 </div>
               </div>
               <div class="flow-step">
                 <span class="num">3</span>
                 <div>
                   <h3>不均衡なスライスを除外</h3>
-                  <p>背景ばかり、または一部構造が欠ける画像を減らし、学習を安定させる。</p>
+                  <p>
+                    背景ばかり、または一部構造が欠ける画像を減らし、学習を安定させる。
+                  </p>
                 </div>
               </div>
               <div class="flow-step">
                 <span class="num">4</span>
                 <div>
                   <h3>T1 / T2 / T2 SPACEごとに比較</h3>
-                  <p>T2 SPACEは高解像度で境界が見えやすく、最も良い結果が出ている。</p>
+                  <p>
+                    T2
+                    SPACEは高解像度で境界が見えやすく、最も良い結果が出ている。
+                  </p>
                 </div>
               </div>
             </div>
             <div class="mapping">
               <h3>SPIDERラベルの統合</h3>
-              <div class="map-row"><span class="tag">0</span><span>背景 Background</span></div>
-              <div class="map-row"><span class="tag">1-99</span><span>椎体 Vertebrae</span></div>
-              <div class="map-row"><span class="tag">100</span><span>脊柱管 Spinal Canal</span></div>
-              <div class="map-row"><span class="tag">200+</span><span>椎間板 Intervertebral Discs</span></div>
+              <div class="map-row">
+                <span class="tag">0</span><span>背景 Background</span>
+              </div>
+              <div class="map-row">
+                <span class="tag">1-99</span><span>椎体 Vertebrae</span>
+              </div>
+              <div class="map-row">
+                <span class="tag">100</span><span>脊柱管 Spinal Canal</span>
+              </div>
+              <div class="map-row">
+                <span class="tag">200+</span
+                ><span>椎間板 Intervertebral Discs</span>
+              </div>
               <p>
                 ポイントは、解剖学的な個体番号を当てるのではなく、臨床的に見たい構造カテゴリを正確に塗り分けること。
               </p>
@@ -1060,12 +1173,17 @@
         <section id="model" class="reveal">
           <div class="section-head">
             <h2>モデルとアルゴリズム</h2>
-            <p>ベースはU-Net。Encoderで特徴を圧縮し、Decoderで元の画像サイズへ戻しながらピクセルごとのクラスを予測する。</p>
+            <p>
+              ベースはU-Net。Encoderで特徴を圧縮し、Decoderで元の画像サイズへ戻しながらピクセルごとのクラスを予測する。
+            </p>
           </div>
           <div class="model-board">
             <div class="model-block" data-mark="E">
               <h3>Encoder</h3>
-              <p>Conv、BatchNorm、Leaky ReLU、MaxPoolで局所特徴から抽象特徴へ変換する。</p>
+              <p>
+                Conv、BatchNorm、Leaky
+                ReLU、MaxPoolで局所特徴から抽象特徴へ変換する。
+              </p>
             </div>
             <div class="model-block" data-mark="B">
               <h3>Bottleneck</h3>
@@ -1094,7 +1212,9 @@
             </div>
             <div class="note">
               <h3>Glorot初期化</h3>
-              <p>重みの初期値を安定させ、深いネットワークの学習を始めやすくする。</p>
+              <p>
+                重みの初期値を安定させ、深いネットワークの学習を始めやすくする。
+              </p>
             </div>
             <div class="note">
               <h3>Focal + Dice</h3>
@@ -1106,7 +1226,10 @@
         <section id="metrics" class="reveal">
           <div class="section-head">
             <h2>精度の説明</h2>
-            <p>主指標はDice。1に近いほど予測マスクと正解マスクの重なりが大きい。T2 SPACEでは各構造で約0.97を達成している。</p>
+            <p>
+              主指標はDice。1に近いほど予測マスクと正解マスクの重なりが大きい。T2
+              SPACEでは各構造で約0.97を達成している。
+            </p>
           </div>
           <table class="result-table">
             <thead>
@@ -1120,19 +1243,28 @@
             <tbody>
               <tr>
                 <td>椎間板 IVDs</td>
-                <td><span class="score">0.9688</span><span class="bar"><i style="--w: 96.88%"></i></span></td>
+                <td>
+                  <span class="score">0.9688</span
+                  ><span class="bar"><i style="--w: 96.88%"></i></span>
+                </td>
                 <td>0.9476</td>
                 <td>薄く小さい構造でも高精度に抽出。</td>
               </tr>
               <tr>
                 <td>椎体 Vertebrae</td>
-                <td><span class="score">0.9712</span><span class="bar"><i style="--w: 97.12%"></i></span></td>
+                <td>
+                  <span class="score">0.9712</span
+                  ><span class="bar"><i style="--w: 97.12%"></i></span>
+                </td>
                 <td>0.9461</td>
                 <td>大きな骨構造の領域が安定して一致。</td>
               </tr>
               <tr>
                 <td>脊柱管 Spinal Canal</td>
-                <td><span class="score">0.9671</span><span class="bar"><i style="--w: 96.71%"></i></span></td>
+                <td>
+                  <span class="score">0.9671</span
+                  ><span class="bar"><i style="--w: 96.71%"></i></span>
+                </td>
                 <td>0.9501</td>
                 <td>細長い管状構造も高い重なりを維持。</td>
               </tr>
@@ -1141,7 +1273,9 @@
           <div class="metric-notes">
             <div class="note">
               <h3>Dice</h3>
-              <p>予測と正解の重なり。セグメンテーションで最も説明しやすい主指標。</p>
+              <p>
+                予測と正解の重なり。セグメンテーションで最も説明しやすい主指標。
+              </p>
             </div>
             <div class="note">
               <h3>IoU</h3>
@@ -1154,30 +1288,45 @@
           </div>
           <div class="callout">
             <strong>発表での注意:</strong>
-            Dice 0.97は非常に高いが、論文の結果は主にValidationでの報告。非公開Testで同等に出るか、前処理差がどれだけ効いたかは慎重に話す。
+            Dice
+            0.97は非常に高いが、論文の結果は主にValidationでの報告。非公開Testで同等に出るか、前処理差がどれだけ効いたかは慎重に話す。
           </div>
         </section>
 
         <section id="glossary" class="reveal">
           <div class="section-head">
             <h2>難しい単語</h2>
-            <p>検索欄に入力すると用語だけ絞り込める。発表前に自分の言葉で説明できるか確認する場所。</p>
+            <p>
+              検索欄に入力すると用語だけ絞り込める。発表前に自分の言葉で説明できるか確認する場所。
+            </p>
           </div>
           <div class="glossary-tools">
-            <input class="search" id="termSearch" type="search" placeholder="例: Dice, U-Net, T2 SPACE, Focal Loss" />
+            <input
+              class="search"
+              id="termSearch"
+              type="search"
+              placeholder="例: Dice, U-Net, T2 SPACE, Focal Loss"
+            />
           </div>
           <div class="glossary" id="glossaryList">
             <article class="term" data-term="segmentation セグメンテーション">
               <h3>セグメンテーション</h3>
-              <p>画像の各ピクセルにラベルを付ける処理。今回なら椎体、脊柱管、椎間板、背景に分類する。</p>
+              <p>
+                画像の各ピクセルにラベルを付ける処理。今回なら椎体、脊柱管、椎間板、背景に分類する。
+              </p>
             </article>
             <article class="term" data-term="u-net unet ユーネット">
               <h3>U-Net</h3>
-              <p>医用画像でよく使われるEncoder-Decoder型ネットワーク。Skip Connectionで細部を復元しやすい。</p>
+              <p>
+                医用画像でよく使われるEncoder-Decoder型ネットワーク。Skip
+                Connectionで細部を復元しやすい。
+              </p>
             </article>
             <article class="term" data-term="t2 space high resolution">
               <h3>T2 SPACE</h3>
-              <p>T2強調の3D高解像度MRI。境界が明瞭なため、本論文では最高精度になった。</p>
+              <p>
+                T2強調の3D高解像度MRI。境界が明瞭なため、本論文では最高精度になった。
+              </p>
             </article>
             <article class="term" data-term="dice coefficient ダイス">
               <h3>Dice係数</h3>
@@ -1185,11 +1334,15 @@
             </article>
             <article class="term" data-term="iou intersection over union">
               <h3>IoU</h3>
-              <p>重なった部分を、予測と正解を合わせた領域で割る指標。Diceより数値は低くなりやすい。</p>
+              <p>
+                重なった部分を、予測と正解を合わせた領域で割る指標。Diceより数値は低くなりやすい。
+              </p>
             </article>
             <article class="term" data-term="focal loss フォーカルロス">
               <h3>Focal Loss</h3>
-              <p>簡単なピクセルより、間違いやすいピクセルに強く学習を向ける損失関数。</p>
+              <p>
+                簡単なピクセルより、間違いやすいピクセルに強く学習を向ける損失関数。
+              </p>
             </article>
             <article class="term" data-term="dice loss ダイスロス">
               <h3>Dice Loss</h3>
@@ -1197,15 +1350,21 @@
             </article>
             <article class="term" data-term="leaky relu dying relu">
               <h3>Leaky ReLU</h3>
-              <p>ReLUの改良版。負の値でも少しだけ勾配を流し、学習しないニューロンを減らす。</p>
+              <p>
+                ReLUの改良版。負の値でも少しだけ勾配を流し、学習しないニューロンを減らす。
+              </p>
             </article>
             <article class="term" data-term="glorot xavier initialization">
               <h3>Glorot / Xavier初期化</h3>
-              <p>層の入力数と出力数に合わせて初期重みを決め、勾配の不安定化を抑える方法。</p>
+              <p>
+                層の入力数と出力数に合わせて初期重みを決め、勾配の不安定化を抑える方法。
+              </p>
             </article>
             <article class="term" data-term="class imbalance クラス不均衡">
               <h3>クラス不均衡</h3>
-              <p>背景ピクセルが多すぎるなど、クラスの量に偏りがある状態。医用画像ではよく問題になる。</p>
+              <p>
+                背景ピクセルが多すぎるなど、クラスの量に偏りがある状態。医用画像ではよく問題になる。
+              </p>
             </article>
           </div>
         </section>
@@ -1213,35 +1372,47 @@
         <section id="todo" class="reveal">
           <div class="section-head">
             <h2>卒研メモ</h2>
-            <p>この論文を自分の研究として発展させる時の流れ。まず再現、次に改良、最後に失敗ケースの分析まで行うと卒研として強くなる。</p>
+            <p>
+              この論文を自分の研究として発展させる時の流れ。まず再現、次に改良、最後に失敗ケースの分析まで行うと卒研として強くなる。
+            </p>
           </div>
           <div class="timeline">
             <div class="timeline-item">
               <time>Stage 1</time>
               <div>
                 <h3>論文再現</h3>
-                <p>SPIDERデータ、4クラス変換、Modified U-Net、Combined Lossを実装し、Dice 0.95以上を目標にする。</p>
+                <p>
+                  SPIDERデータ、4クラス変換、Modified U-Net、Combined
+                  Lossを実装し、Dice 0.95以上を目標にする。
+                </p>
               </div>
             </div>
             <div class="timeline-item">
               <time>Stage 2</time>
               <div>
                 <h3>改良実験</h3>
-                <p>Attention U-Net、U-Net++、Boundary Loss、Tversky Loss、データ拡張を比較する。</p>
+                <p>
+                  Attention U-Net、U-Net++、Boundary Loss、Tversky
+                  Loss、データ拡張を比較する。
+                </p>
               </div>
             </div>
             <div class="timeline-item">
               <time>Stage 3</time>
               <div>
                 <h3>可視化と考察</h3>
-                <p>MRI画像に予測マスクを重ね、どの構造・どの撮像条件で失敗しやすいかを説明する。</p>
+                <p>
+                  MRI画像に予測マスクを重ね、どの構造・どの撮像条件で失敗しやすいかを説明する。
+                </p>
               </div>
             </div>
             <div class="timeline-item">
               <time>Stage 4</time>
               <div>
                 <h3>発表用まとめ</h3>
-                <p>臨床的意義、技術的工夫、再現結果、論文との差分、自分の改良点を整理する。</p>
+                <p>
+                  臨床的意義、技術的工夫、再現結果、論文との差分、自分の改良点を整理する。
+                </p>
               </div>
             </div>
           </div>
@@ -1267,10 +1438,12 @@
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
             const id = `#${entry.target.id}`;
-            links.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === id));
+            links.forEach((link) =>
+              link.classList.toggle("active", link.getAttribute("href") === id),
+            );
           });
         },
-        { rootMargin: "-35% 0px -55% 0px", threshold: 0.01 }
+        { rootMargin: "-35% 0px -55% 0px", threshold: 0.01 },
       );
 
       sections.forEach((section) => sectionObserver.observe(section));
@@ -1281,10 +1454,12 @@
             if (entry.isIntersecting) entry.target.classList.add("visible");
           });
         },
-        { threshold: 0.12 }
+        { threshold: 0.12 },
       );
 
-      document.querySelectorAll(".reveal").forEach((node) => revealObserver.observe(node));
+      document
+        .querySelectorAll(".reveal")
+        .forEach((node) => revealObserver.observe(node));
 
       const search = document.querySelector("#termSearch");
       const terms = [...document.querySelectorAll(".term")];

@@ -26,11 +26,16 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(0, 143, 122, 0.13), transparent 34rem),
+    radial-gradient(
+      circle at top left,
+      rgba(0, 143, 122, 0.13),
+      transparent 34rem
+    ),
     linear-gradient(135deg, rgba(47, 111, 214, 0.08), transparent 36rem),
     var(--paper);
   color: var(--ink);
-  font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "Segoe UI", sans-serif;
+  font-family:
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "Segoe UI", sans-serif;
   line-height: 1.75;
 }
 
@@ -45,7 +50,12 @@ a {
   z-index: 20;
   width: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--accent), var(--disc), var(--vertebrae));
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    var(--disc),
+    var(--vertebrae)
+  );
 }
 
 .shell {
@@ -307,8 +317,16 @@ h3 {
   border-radius: 34px;
   overflow: hidden;
   background:
-    linear-gradient(145deg, rgba(255, 255, 250, 0.78), rgba(219, 232, 225, 0.58)),
-    repeating-linear-gradient(90deg, rgba(24, 32, 29, 0.04) 0 1px, transparent 1px 30px);
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 250, 0.78),
+      rgba(219, 232, 225, 0.58)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(24, 32, 29, 0.04) 0 1px,
+      transparent 1px 30px
+    );
   box-shadow: var(--shadow);
 }
 
@@ -365,8 +383,16 @@ h3 {
   border-radius: 24px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 52% 45%, rgba(238, 244, 240, 0.95) 0 24%, transparent 25%),
-    radial-gradient(ellipse at 54% 52%, rgba(43, 50, 48, 0.52) 0 42%, rgba(21, 28, 26, 0.9) 43%),
+    radial-gradient(
+      ellipse at 52% 45%,
+      rgba(238, 244, 240, 0.95) 0 24%,
+      transparent 25%
+    ),
+    radial-gradient(
+      ellipse at 54% 52%,
+      rgba(43, 50, 48, 0.52) 0 42%,
+      rgba(21, 28, 26, 0.9) 43%
+    ),
     linear-gradient(180deg, #3f4845, #161d1b);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
@@ -383,7 +409,11 @@ h3 {
   width: 33%;
   height: 32px;
   border-radius: 11px;
-  background: linear-gradient(90deg, rgba(236, 238, 234, 0.88), rgba(154, 164, 157, 0.8));
+  background: linear-gradient(
+    90deg,
+    rgba(236, 238, 234, 0.88),
+    rgba(154, 164, 157, 0.8)
+  );
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
@@ -464,8 +494,16 @@ h3 {
 
 .mask-slice {
   background:
-    radial-gradient(ellipse at 52% 45%, rgba(238, 244, 240, 0.52) 0 25%, transparent 26%),
-    radial-gradient(ellipse at 54% 52%, rgba(43, 50, 48, 0.28) 0 42%, rgba(21, 28, 26, 0.78) 43%),
+    radial-gradient(
+      ellipse at 52% 45%,
+      rgba(238, 244, 240, 0.52) 0 25%,
+      transparent 26%
+    ),
+    radial-gradient(
+      ellipse at 54% 52%,
+      rgba(43, 50, 48, 0.28) 0 42%,
+      rgba(21, 28, 26, 0.78) 43%
+    ),
     linear-gradient(180deg, #3f4845, #161d1b);
 }
 
@@ -573,7 +611,11 @@ h3 {
 .disc {
   height: 34px;
   border-radius: 999px;
-  background: linear-gradient(120deg, rgba(47, 111, 214, 0.9), rgba(47, 111, 214, 0.42));
+  background: linear-gradient(
+    120deg,
+    rgba(47, 111, 214, 0.9),
+    rgba(47, 111, 214, 0.42)
+  );
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
   transform: translateX(var(--shift));
 }
@@ -583,7 +625,11 @@ h3 {
   border-radius: 999px;
   background:
     linear-gradient(180deg, rgba(41, 168, 117, 0.82), rgba(41, 168, 117, 0.2)),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 2px, transparent 2px 22px);
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.28) 0 2px,
+      transparent 2px 22px
+    );
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.34),
     0 0 0 12px rgba(41, 168, 117, 0.08);

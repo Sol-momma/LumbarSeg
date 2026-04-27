@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+.git/
+
+package-lock.json
+
+*.pdf
+*.mha
+
+data/*.csv
+data/*.json
+
+spine_segmentation.ipynb

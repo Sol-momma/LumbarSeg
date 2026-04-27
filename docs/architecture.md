@@ -140,6 +140,7 @@ L_combined = α * L_focal + (1 - α) * L_dice
 - **(1-α) = 0.4** — Dice Lossの重み
 
 **注意**: 論文内にγの値について矛盾あり。
+
 - Section 4 (Methodology): γ = 4.0 と記載
 - その直後: α=0.6, γ=0.4 と記載 (γ=0.4はαとの混同の可能性)
 - → **γ = 4.0 を採用するのが妥当**
@@ -148,16 +149,16 @@ L_combined = α * L_focal + (1 - α) * L_dice
 
 ## 学習設定
 
-| パラメータ | 値 |
-|---|---|
-| エポック数 | 100 |
-| バッチサイズ | 8 |
-| Early Stopping | validation Mean IoU 基準 |
+| パラメータ          | 値                       |
+| ------------------- | ------------------------ |
+| エポック数          | 100                      |
+| バッチサイズ        | 8                        |
+| Early Stopping      | validation Mean IoU 基準 |
 | Model Checkpointing | validation Mean IoU 基準 |
-| Optimizer | 未記載 (Adam が一般的) |
-| 学習率 | 未記載 |
-| 入力サイズ | 512 x 640 (2D PNG) |
-| 出力クラス数 | 4 |
+| Optimizer           | 未記載 (Adam が一般的)   |
+| 学習率              | 未記載                   |
+| 入力サイズ          | 512 x 640 (2D PNG)       |
+| 出力クラス数        | 4                        |
 
 ## 評価指標
 

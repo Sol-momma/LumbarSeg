@@ -75,7 +75,7 @@ SP/
 8. **Combined Loss (`loss.py`)**
    - Focal Loss (γ=4.0)
    - Dice Loss
-   - Combined: α=0.6 * Focal + 0.4 * Dice
+   - Combined: α=0.6 _ Focal + 0.4 _ Dice
 
 ### Phase 3: 学習
 
@@ -98,12 +98,12 @@ SP/
 
 ## 技術選定の選択肢
 
-| 項目 | 選択肢A | 選択肢B | 備考 |
-|---|---|---|---|
-| フレームワーク | PyTorch | TensorFlow/Keras | 論文はKeras系の記述 (Conv2DTranspose等) |
-| 3D画像読み込み | SimpleITK | nibabel | SimpleITKがmhaに標準対応 |
-| 画像処理 | OpenCV | PIL/Pillow | OpenCVが高速 |
-| 設定管理 | YAML | argparse | 再現性重視ならYAML |
+| 項目           | 選択肢A   | 選択肢B          | 備考                                    |
+| -------------- | --------- | ---------------- | --------------------------------------- |
+| フレームワーク | PyTorch   | TensorFlow/Keras | 論文はKeras系の記述 (Conv2DTranspose等) |
+| 3D画像読み込み | SimpleITK | nibabel          | SimpleITKがmhaに標準対応                |
+| 画像処理       | OpenCV    | PIL/Pillow       | OpenCVが高速                            |
+| 設定管理       | YAML      | argparse         | 再現性重視ならYAML                      |
 
 **推奨**: 論文のコード記述がKeras寄りなので TensorFlow/Keras が最も忠実な再現になる。
 ただしPyTorchでも問題なく実装可能。

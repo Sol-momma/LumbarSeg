@@ -29,7 +29,9 @@ const { rows } = Astro.props;
           <td>{row.structure}</td>
           <td>
             <span class="score">{row.dice}</span>
-            <span class="bar"><i style={`--w: ${Number(row.dice) * 100}%`}></i></span>
+            <span class="bar">
+              <i style={`--w: ${Number(row.dice) * 100}%`} />
+            </span>
           </td>
           <td>{row.iou}</td>
           <td>{row.meaning}</td>
