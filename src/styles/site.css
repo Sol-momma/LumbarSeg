@@ -89,6 +89,40 @@ a {
   line-height: 1.25;
 }
 
+.language-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(24, 32, 29, 0.05);
+}
+
+.language-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.language-tab:hover,
+.language-tab.active {
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: 0 10px 24px rgba(24, 32, 29, 0.08);
+}
+
 .nav {
   display: grid;
   gap: 4px;
