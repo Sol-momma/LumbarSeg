@@ -1,32 +1,56 @@
 ---
+interface Props {
+  language?: "ja" | "en";
+}
+
+const { language = "ja" } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const paperPdf = `${baseUrl}papers/paper.pdf`;
 const datasetPdf = `${baseUrl}papers/Dataset_Paper.pdf`;
+
+const copy = {
+  ja: {
+    openPdf: "別タブで開く",
+    sourceNote: "出版社ページで概要、DOI、引用情報を確認する。",
+    mainPdfNote: "このメモの元になっているメイン論文PDF。",
+    datasetNote: "SPIDERデータセットの詳細を確認する補助資料。",
+    linksLabel: "論文資料リンク",
+  },
+  en: {
+    openPdf: "Open in new tab",
+    sourceNote: "Publisher page for the abstract, DOI, and citation details.",
+    mainPdfNote: "Local copy of the main paper used for this memo.",
+    datasetNote: "Supplementary source for the SPIDER dataset details.",
+    linksLabel: "Paper source links",
+  },
+} as const;
+
+const t = copy[language];
 ---
 
 <div class="resource-layout">
   <div class="pdf-panel">
     <div class="pdf-head">
       <span>Main Paper PDF</span>
-      <a class="button" href={paperPdf} target="_blank" rel="noopener noreferrer">別タブで開く</a>
+      <a class="button" href={paperPdf} target="_blank" rel="noopener noreferrer">{t.openPdf}</a>
     </div>
     <iframe class="pdf-frame" title="Ahmed et al. 2025 paper PDF" src={`${paperPdf}#toolbar=1`}></iframe>
   </div>
-  <aside class="resource-panel" aria-label="論文資料リンク">
+  <aside class="resource-panel" aria-label={t.linksLabel}>
     <a class="resource-link" href="https://www.sciencedirect.com/science/article/pii/S2666827025000180" target="_blank" rel="noopener noreferrer">
       <small>ScienceDirect</small>
       <strong>Pioneering Precision in Lumbar Spine MRI Segmentation</strong>
-      <span>出版社ページで概要、DOI、引用情報を確認する。</span>
+      <span>{t.sourceNote}</span>
     </a>
     <a class="resource-link" href={paperPdf} target="_blank" rel="noopener noreferrer">
       <small>Local PDF</small>
       <strong>paper.pdf</strong>
-      <span>このメモの元になっているメイン論文PDF。</span>
+      <span>{t.mainPdfNote}</span>
     </a>
     <a class="resource-link" href={datasetPdf} target="_blank" rel="noopener noreferrer">
       <small>Dataset PDF</small>
       <strong>Dataset_Paper.pdf</strong>
-      <span>SPIDERデータセットの詳細を確認する補助資料。</span>
+      <span>{t.datasetNote}</span>
     </a>
   </aside>
 </div>

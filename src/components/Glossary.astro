@@ -7,13 +7,19 @@ interface Term {
 
 interface Props {
   terms: Term[];
+  language?: "ja" | "en";
 }
 
-const { terms } = Astro.props;
+const { terms, language = "ja" } = Astro.props;
+
+const placeholder =
+  language === "ja"
+    ? "例: Dice, U-Net, T2 SPACE, Focal Loss"
+    : "Example: Dice, U-Net, T2 SPACE, Focal Loss";
 ---
 
 <div class="glossary-tools">
-  <input class="search" id="termSearch" type="search" placeholder="例: Dice, U-Net, T2 SPACE, Focal Loss" />
+  <input class="search" id="termSearch" type="search" placeholder={placeholder} />
 </div>
 <div class="glossary" id="glossaryList">
   {

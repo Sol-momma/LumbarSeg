@@ -5,24 +5,73 @@ import "../styles/site.css";
 interface Props {
   title: string;
   description: string;
+  language?: "ja" | "en";
 }
 
-const { title, description } = Astro.props;
+const { title, description, language = "ja" } = Astro.props;
 
-const navItems = [
-  { id: "overview", label: "概要" },
-  { id: "resources", label: "資料" },
-  { id: "important", label: "重要情報" },
-  { id: "data", label: "データと前処理" },
-  { id: "model", label: "モデル" },
-  { id: "metrics", label: "精度" },
-  { id: "glossary", label: "用語" },
-  { id: "todo", label: "卒研メモ" },
-];
+const baseUrl = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const homeHref = baseUrl;
+const englishHref = `${baseUrl}en/`;
+
+const copy = {
+  ja: {
+    htmlLang: "ja",
+    brand: ["腰椎MRI", "セグメンテーション"],
+    note: "Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。",
+    navLabel: "ページ内ナビゲーション",
+    eyebrow: "Ahmed et al. 2025 / Modified U-Net",
+    title: "腰椎MRIを4クラスに自動分割する研究メモ",
+    lead:
+      "MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。",
+    actions: {
+      primary: "重要情報を見る",
+      resources: "PDFとURLを見る",
+      glossary: "難しい単語を確認",
+    },
+    navItems: [
+      { id: "overview", label: "概要" },
+      { id: "resources", label: "資料" },
+      { id: "important", label: "重要情報" },
+      { id: "data", label: "データと前処理" },
+      { id: "model", label: "モデル" },
+      { id: "metrics", label: "精度" },
+      { id: "glossary", label: "用語" },
+      { id: "todo", label: "卒研メモ" },
+    ],
+  },
+  en: {
+    htmlLang: "en",
+    brand: ["Lumbar MRI", "Segmentation"],
+    note: "English presentation version of the Ahmed et al. (2025) paper memo.",
+    navLabel: "Page navigation",
+    eyebrow: "Ahmed et al. 2025 / Modified U-Net",
+    title: "A research note on four-class lumbar MRI segmentation",
+    lead:
+      "This page summarizes a deep learning approach that classifies each MRI pixel into background, vertebrae, spinal canal, or intervertebral discs. The key idea is the combination of careful preprocessing, a modified U-Net, and a Combined Loss.",
+    actions: {
+      primary: "Key facts",
+      resources: "PDF and links",
+      glossary: "Terminology",
+    },
+    navItems: [
+      { id: "overview", label: "Overview" },
+      { id: "resources", label: "Sources" },
+      { id: "important", label: "Key Facts" },
+      { id: "data", label: "Data Pipeline" },
+      { id: "model", label: "Model" },
+      { id: "metrics", label: "Metrics" },
+      { id: "glossary", label: "Terms" },
+      { id: "todo", label: "Project Plan" },
+    ],
+  },
+} as const;
+
+const t = copy[language];
 ---
 
 <!doctype html>
-<html lang="ja">
+<html lang={t.htmlLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -32,14 +81,18 @@ const navItems = [
   <body>
     <div class="progress" aria-hidden="true"></div>
     <div class="shell">
-      <aside class="sidebar" aria-label="ページ内ナビゲーション">
+      <aside class="sidebar" aria-label={t.navLabel}>
         <div class="brand">
           <small>Research Memo</small>
-          <strong>腰椎MRI<br />セグメンテーション</strong>
+          <strong>{t.brand[0]}<br />{t.brand[1]}</strong>
+        </div>
+        <div class="language-tabs" aria-label="Language switcher">
+          <a class:list={["language-tab", { active: language === "ja" }]} href={homeHref}>日本語</a>
+          <a class:list={["language-tab", { active: language === "en" }]} href={englishHref}>English</a>
         </div>
         <ol class="nav">
           {
-            navItems.map((item, index) => (
+            t.navItems.map((item, index) => (
               <li>
                 <a href={`#${item.id}`}>
                   {item.label}
@@ -50,26 +103,23 @@ const navItems = [
           }
         </ol>
         <p class="sidebar-note">
-          Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。
+          {t.note}
         </p>
       </aside>
 
       <main>
         <header class="hero" id="overview">
           <div class="reveal">
-            <span class="eyebrow">Ahmed et al. 2025 / Modified U-Net</span>
-            <h1>腰椎MRIを4クラスに自動分割する研究メモ</h1>
-            <p class="lead">
-              MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。
-              論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。
-            </p>
+            <span class="eyebrow">{t.eyebrow}</span>
+            <h1>{t.title}</h1>
+            <p class="lead">{t.lead}</p>
             <div class="hero-actions">
-              <a class="button primary" href="#important">重要情報を見る</a>
-              <a class="button" href="#resources">PDFとURLを見る</a>
-              <a class="button" href="#glossary">難しい単語を確認</a>
+              <a class="button primary" href="#important">{t.actions.primary}</a>
+              <a class="button" href="#resources">{t.actions.resources}</a>
+              <a class="button" href="#glossary">{t.actions.glossary}</a>
             </div>
           </div>
-          <SpineVisual />
+          <SpineVisual language={language} />
         </header>
 
         <slot />
