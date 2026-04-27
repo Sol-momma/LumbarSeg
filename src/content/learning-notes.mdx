@@ -1,0 +1,141 @@
+---
+title: "研究メモ"
+description: "論文理解、疑問、実験ログ、次の行動を自分の言葉で蓄積するための学習メモページ。"
+---
+
+import Section from "../components/Section.astro";
+import NoteGrid from "../components/NoteGrid.astro";
+import Callout from "../components/Callout.astro";
+
+<Section
+  id="focus"
+  title="今の焦点"
+  summary="今いちばん理解したいことと、次に見直す範囲を短く書く場所。毎回ここを更新すると、迷子になりにくい。"
+>
+  <div class="memo-block">
+    <p>
+      <strong>現在のテーマ:</strong>{" "}
+      論文再現に入る前に、データ・マスク・前処理の意味を自分で説明できるようにする。
+    </p>
+    <p>
+      <strong>次に読む場所:</strong> <code>spine_segmentation.ipynb</code> の{" "}
+      <code>1. Data Exploration</code> と <code>2. Data Preprocessing</code>
+    </p>
+    <p>
+      <strong>今日の一言メモ:</strong>{" "}
+      まずは「MRI画像」と「マスク画像」の違いを言えるようにする。
+    </p>
+  </div>
+</Section>
+
+<Section
+  id="understanding"
+  title="自分の理解メモ"
+  summary="論文やコードを読んで理解したことを、自分の言葉で書く欄。きれいに書くより、説明できる表現にすることを優先する。"
+>
+  <div class="memo-block">
+    <table class="memo-table">
+      <tbody>
+        <tr>
+          <th>セグメンテーション</th>
+          <td>
+            画像全体に1つのラベルを付けるのではなく、各ピクセルが何かを予測するタスク。
+          </td>
+        </tr>
+        <tr>
+          <th>マスク</th>
+          <td>
+            各ピクセルに正解ラベルが入った答え画像。モデルは MRI
+            からこのマスクを予測する。
+          </td>
+        </tr>
+        <tr>
+          <th>4クラス化</th>
+          <td>
+            細かいラベル番号を、背景・椎体・脊柱管・椎間板の4種類にまとめて学習しやすくする。
+          </td>
+        </tr>
+        <tr>
+          <th>2D化</th>
+          <td>
+            3D MRI をそのまま扱う代わりに、2D スライスへ分けて 2D U-Net
+            で学習する。
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</Section>
+
+<Section
+  id="questions"
+  title="まだ曖昧な点"
+  summary="わからないことを残しておく欄。理解してから消すより、まず書き出して可視化したほうが前に進みやすい。"
+>
+  <NoteGrid
+    notes={[
+      {
+        title: "なぜこのフィルタ条件なのか",
+        text: "4クラス未満の除外と不均衡比率 55% の根拠を、論文本文から確認したい。",
+      },
+      {
+        title: "T2 SPACE が強い理由",
+        text: "高解像度だから、で終わらせず、どの構造の境界が見えやすいのかまで説明したい。",
+      },
+      {
+        title: "Combined Loss の直感",
+        text: "Focal Loss と Dice Loss をなぜ足し合わせるのか、自分の言葉で言えるようにしたい。",
+      },
+    ]}
+  />
+</Section>
+
+<Section
+  id="log"
+  title="実験ログ"
+  summary="実行したこと、出た結果、気づいたことを残す欄。ここを残しておくと、あとで卒研発表やレポートに転用しやすい。"
+>
+  <div class="memo-block">
+    <ul class="memo-list">
+      <li>
+        <strong>2026-04-27:</strong> Astro
+        側に学習メモページを作成。論文理解のための記録場所を分離した。
+      </li>
+      <li>
+        <strong>次回予定:</strong> ノートブックの Data Exploration
+        セクションを読み、使っているファイルとラベルを確認する。
+      </li>
+      <li>
+        <strong>メモの書き方:</strong>{" "}
+        「何を見たか」「何がわかったか」「まだ何がわからないか」の3点で残す。
+      </li>
+    </ul>
+  </div>
+</Section>
+
+<Section
+  id="next"
+  title="次にやること"
+  summary="理解のための次アクションを小さく切る欄。タスクは30分以内で終わる粒度にすると進めやすい。"
+>
+  <NoteGrid
+    notes={[
+      {
+        title: "1. マスクを理解",
+        text: "元画像とマスクの違いを、自分の言葉で2文で説明する。",
+      },
+      {
+        title: "2. ラベル確認",
+        text: "0, 1-99, 100, 200+ が何を表すかをノートに書き出す。",
+      },
+      {
+        title: "3. 前処理確認",
+        text: "なぜ 3D から 2D にするか、なぜフィルタリングするかを整理する。",
+      },
+    ]}
+  />
+  <Callout>
+    <strong>使い方:</strong>
+    ここは完成原稿ではなく、理解を育てる途中のページとして使う。文章が雑でも、自分で説明できる内容を増やしていけば十分。
+  </Callout>
+</Section>

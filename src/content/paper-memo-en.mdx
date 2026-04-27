@@ -30,10 +30,26 @@ import Callout from "../components/Callout.astro";
 >
   <KpiGrid
     items={[
-      { label: "Dataset", value: "218", text: "Number of patients in the SPIDER lumbar MRI dataset." },
-      { label: "Series", value: "447", text: "MRI series including T1, T2, and T2 SPACE sequences." },
-      { label: "Classes", value: "4", text: "Background, vertebrae, spinal canal, and intervertebral discs." },
-      { label: "Best Dice", value: "0.97", text: "Best reported performance on T2 SPACE images." },
+      {
+        label: "Dataset",
+        value: "218",
+        text: "Number of patients in the SPIDER lumbar MRI dataset.",
+      },
+      {
+        label: "Series",
+        value: "447",
+        text: "MRI series including T1, T2, and T2 SPACE sequences.",
+      },
+      {
+        label: "Classes",
+        value: "4",
+        text: "Background, vertebrae, spinal canal, and intervertebral discs.",
+      },
+      {
+        label: "Best Dice",
+        value: "0.97",
+        text: "Best reported performance on T2 SPACE images.",
+      },
     ]}
   />
 </Section>
@@ -46,10 +62,22 @@ import Callout from "../components/Callout.astro";
   <div class="split">
     <DataFlow
       items={[
-        { title: "Extract 2D slices from 3D MHA volumes", text: "This reduces GPU memory cost and makes the data suitable for a 2D U-Net pipeline." },
-        { title: "Merge detailed labels into four classes", text: "Individual vertebra and disc IDs are converted into broader anatomical categories." },
-        { title: "Filter imbalanced slices", text: "Slices dominated by background or missing key structures are removed to stabilize training." },
-        { title: "Compare T1, T2, and T2 SPACE", text: "T2 SPACE achieves the best result because its higher resolution makes anatomical boundaries clearer." },
+        {
+          title: "Extract 2D slices from 3D MHA volumes",
+          text: "This reduces GPU memory cost and makes the data suitable for a 2D U-Net pipeline.",
+        },
+        {
+          title: "Merge detailed labels into four classes",
+          text: "Individual vertebra and disc IDs are converted into broader anatomical categories.",
+        },
+        {
+          title: "Filter imbalanced slices",
+          text: "Slices dominated by background or missing key structures are removed to stabilize training.",
+        },
+        {
+          title: "Compare T1, T2, and T2 SPACE",
+          text: "T2 SPACE achieves the best result because its higher resolution makes anatomical boundaries clearer.",
+        },
       ]}
     />
     <LabelMapping
@@ -71,19 +99,50 @@ import Callout from "../components/Callout.astro";
 >
   <ModelBoard
     blocks={[
-      { mark: "E", title: "Encoder", text: "Convolution, Batch Normalization, Leaky ReLU, and Max Pooling extract increasingly abstract features." },
-      { mark: "B", title: "Bottleneck", text: "A 512-channel layer captures complex anatomical patterns and boundary information." },
-      { mark: "S", title: "Skip Connection", text: "Fine spatial information is passed from encoder to decoder to preserve boundaries." },
-      { mark: "D", title: "Decoder", text: "Transposed convolution restores resolution and reconstructs class-specific masks." },
-      { mark: "4", title: "Softmax", text: "Each pixel is assigned probabilities over the four output classes." },
+      {
+        mark: "E",
+        title: "Encoder",
+        text: "Convolution, Batch Normalization, Leaky ReLU, and Max Pooling extract increasingly abstract features.",
+      },
+      {
+        mark: "B",
+        title: "Bottleneck",
+        text: "A 512-channel layer captures complex anatomical patterns and boundary information.",
+      },
+      {
+        mark: "S",
+        title: "Skip Connection",
+        text: "Fine spatial information is passed from encoder to decoder to preserve boundaries.",
+      },
+      {
+        mark: "D",
+        title: "Decoder",
+        text: "Transposed convolution restores resolution and reconstructs class-specific masks.",
+      },
+      {
+        mark: "4",
+        title: "Softmax",
+        text: "Each pixel is assigned probabilities over the four output classes.",
+      },
     ]}
   />
-  <div class="loss-equation">Combined Loss = 0.6 × Focal Loss + 0.4 × Dice Loss</div>
+  <div class="loss-equation">
+    Combined Loss = 0.6 × Focal Loss + 0.4 × Dice Loss
+  </div>
   <NoteGrid
     notes={[
-      { title: "Leaky ReLU", text: "Keeps a small gradient for negative inputs and reduces the risk of inactive neurons." },
-      { title: "Glorot Initialization", text: "Stabilizes the starting weight distribution and helps gradients flow through deeper layers." },
-      { title: "Focal + Dice", text: "Balances hard-pixel learning with direct optimization of mask overlap." },
+      {
+        title: "Leaky ReLU",
+        text: "Keeps a small gradient for negative inputs and reduces the risk of inactive neurons.",
+      },
+      {
+        title: "Glorot Initialization",
+        text: "Stabilizes the starting weight distribution and helps gradients flow through deeper layers.",
+      },
+      {
+        title: "Focal + Dice",
+        text: "Balances hard-pixel learning with direct optimization of mask overlap.",
+      },
     ]}
   />
 </Section>
@@ -95,21 +154,48 @@ import Callout from "../components/Callout.astro";
 >
   <MetricsTable
     rows={[
-      { structure: "Intervertebral Discs", dice: "0.9688", iou: "0.9476", meaning: "Thin disc structures are segmented with high overlap." },
-      { structure: "Vertebrae", dice: "0.9712", iou: "0.9461", meaning: "Large bony structures are segmented consistently." },
-      { structure: "Spinal Canal", dice: "0.9671", iou: "0.9501", meaning: "The long canal-like structure remains accurate despite its shape." },
+      {
+        structure: "Intervertebral Discs",
+        dice: "0.9688",
+        iou: "0.9476",
+        meaning: "Thin disc structures are segmented with high overlap.",
+      },
+      {
+        structure: "Vertebrae",
+        dice: "0.9712",
+        iou: "0.9461",
+        meaning: "Large bony structures are segmented consistently.",
+      },
+      {
+        structure: "Spinal Canal",
+        dice: "0.9671",
+        iou: "0.9501",
+        meaning:
+          "The long canal-like structure remains accurate despite its shape.",
+      },
     ]}
   />
   <NoteGrid
     notes={[
-      { title: "Dice", text: "Measures overlap between prediction and ground truth. It is the easiest main metric to explain." },
-      { title: "IoU", text: "Intersection divided by union. It is usually stricter than Dice." },
-      { title: "ASD / NSD", text: "Boundary-distance metrics used to evaluate how far predicted surfaces deviate from the annotation." },
+      {
+        title: "Dice",
+        text: "Measures overlap between prediction and ground truth. It is the easiest main metric to explain.",
+      },
+      {
+        title: "IoU",
+        text: "Intersection divided by union. It is usually stricter than Dice.",
+      },
+      {
+        title: "ASD / NSD",
+        text: "Boundary-distance metrics used to evaluate how far predicted surfaces deviate from the annotation.",
+      },
     ]}
   />
   <Callout>
     <strong>Presentation note:</strong>
-    Dice around 0.97 is very high, but the reported result should be discussed carefully because test-set details and preprocessing choices affect generalization.
+    Dice around 0.97 is very high, but the reported result should be discussed
+    carefully because test-set details and preprocessing choices affect
+    generalization.
   </Callout>
 </Section>
 
@@ -121,16 +207,56 @@ import Callout from "../components/Callout.astro";
   <Glossary
     language="en"
     terms={[
-      { key: "segmentation semantic segmentation", title: "Segmentation", text: "A pixel-level classification task. In this project, each pixel is assigned to background, vertebrae, spinal canal, or discs." },
-      { key: "u-net unet encoder decoder", title: "U-Net", text: "A widely used medical image segmentation architecture with an encoder, decoder, and skip connections." },
-      { key: "t2 space high resolution mri", title: "T2 SPACE", text: "A high-resolution 3D T2-weighted MRI sequence. It produces clearer anatomical boundaries." },
-      { key: "dice coefficient", title: "Dice Coefficient", text: "A measure of overlap between prediction and ground truth. Higher is better, with 1 meaning perfect overlap." },
-      { key: "iou intersection over union", title: "IoU", text: "Intersection over Union. It divides the overlapping region by the total combined region." },
-      { key: "focal loss", title: "Focal Loss", text: "A loss function that gives more weight to hard-to-classify pixels." },
-      { key: "dice loss", title: "Dice Loss", text: "A loss function that directly optimizes the overlap between predicted and true masks." },
-      { key: "leaky relu dying relu", title: "Leaky ReLU", text: "An activation function that keeps a small gradient for negative values." },
-      { key: "glorot xavier initialization", title: "Glorot / Xavier Initialization", text: "A weight initialization method designed to keep training stable in deep networks." },
-      { key: "class imbalance", title: "Class Imbalance", text: "A situation where some classes, such as background, dominate the image and can bias learning." },
+      {
+        key: "segmentation semantic segmentation",
+        title: "Segmentation",
+        text: "A pixel-level classification task. In this project, each pixel is assigned to background, vertebrae, spinal canal, or discs.",
+      },
+      {
+        key: "u-net unet encoder decoder",
+        title: "U-Net",
+        text: "A widely used medical image segmentation architecture with an encoder, decoder, and skip connections.",
+      },
+      {
+        key: "t2 space high resolution mri",
+        title: "T2 SPACE",
+        text: "A high-resolution 3D T2-weighted MRI sequence. It produces clearer anatomical boundaries.",
+      },
+      {
+        key: "dice coefficient",
+        title: "Dice Coefficient",
+        text: "A measure of overlap between prediction and ground truth. Higher is better, with 1 meaning perfect overlap.",
+      },
+      {
+        key: "iou intersection over union",
+        title: "IoU",
+        text: "Intersection over Union. It divides the overlapping region by the total combined region.",
+      },
+      {
+        key: "focal loss",
+        title: "Focal Loss",
+        text: "A loss function that gives more weight to hard-to-classify pixels.",
+      },
+      {
+        key: "dice loss",
+        title: "Dice Loss",
+        text: "A loss function that directly optimizes the overlap between predicted and true masks.",
+      },
+      {
+        key: "leaky relu dying relu",
+        title: "Leaky ReLU",
+        text: "An activation function that keeps a small gradient for negative values.",
+      },
+      {
+        key: "glorot xavier initialization",
+        title: "Glorot / Xavier Initialization",
+        text: "A weight initialization method designed to keep training stable in deep networks.",
+      },
+      {
+        key: "class imbalance",
+        title: "Class Imbalance",
+        text: "A situation where some classes, such as background, dominate the image and can bias learning.",
+      },
     ]}
   />
 </Section>
@@ -142,10 +268,26 @@ import Callout from "../components/Callout.astro";
 >
   <Timeline
     items={[
-      { stage: "Stage 1", title: "Reproduce the paper", text: "Implement the SPIDER preprocessing pipeline, four-class labels, Modified U-Net, and Combined Loss." },
-      { stage: "Stage 2", title: "Improve the method", text: "Compare Attention U-Net, U-Net++, Boundary Loss, Tversky Loss, and stronger augmentation." },
-      { stage: "Stage 3", title: "Visualize and analyze", text: "Overlay predictions on MRI images and identify which structures or sequences fail most often." },
-      { stage: "Stage 4", title: "Prepare the presentation", text: "Explain the clinical motivation, technical method, reproduction result, limitations, and proposed improvements." },
+      {
+        stage: "Stage 1",
+        title: "Reproduce the paper",
+        text: "Implement the SPIDER preprocessing pipeline, four-class labels, Modified U-Net, and Combined Loss.",
+      },
+      {
+        stage: "Stage 2",
+        title: "Improve the method",
+        text: "Compare Attention U-Net, U-Net++, Boundary Loss, Tversky Loss, and stronger augmentation.",
+      },
+      {
+        stage: "Stage 3",
+        title: "Visualize and analyze",
+        text: "Overlay predictions on MRI images and identify which structures or sequences fail most often.",
+      },
+      {
+        stage: "Stage 4",
+        title: "Prepare the presentation",
+        text: "Explain the clinical motivation, technical method, reproduction result, limitations, and proposed improvements.",
+      },
     ]}
   />
 </Section>

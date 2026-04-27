@@ -6,68 +6,131 @@ interface Props {
   title: string;
   description: string;
   language?: "ja" | "en";
+  page?: "memo" | "notes";
 }
 
-const { title, description, language = "ja" } = Astro.props;
+const { title, description, language = "ja", page = "memo" } = Astro.props;
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const homeHref = baseUrl;
 const englishHref = `${baseUrl}en/`;
+const notesHref = `${baseUrl}notes/`;
 
 const copy = {
   ja: {
     htmlLang: "ja",
     brand: ["腰椎MRI", "セグメンテーション"],
-    note: "Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。",
     navLabel: "ページ内ナビゲーション",
-    eyebrow: "Ahmed et al. 2025 / Modified U-Net",
-    title: "腰椎MRIを4クラスに自動分割する研究メモ",
-    lead:
-      "MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。",
-    actions: {
-      primary: "重要情報を見る",
-      resources: "PDFとURLを見る",
-      glossary: "難しい単語を確認",
+    pageLinks: {
+      memo: { href: homeHref, label: "論文メモ" },
+      notes: { href: notesHref, label: "学習メモ" },
     },
-    navItems: [
-      { id: "overview", label: "概要" },
-      { id: "resources", label: "資料" },
-      { id: "important", label: "重要情報" },
-      { id: "data", label: "データと前処理" },
-      { id: "model", label: "モデル" },
-      { id: "metrics", label: "精度" },
-      { id: "glossary", label: "用語" },
-      { id: "todo", label: "卒研メモ" },
-    ],
+    pages: {
+      memo: {
+        note: "Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。",
+        eyebrow: "Ahmed et al. 2025 / Modified U-Net",
+        title: "腰椎MRIを4クラスに自動分割する研究メモ",
+        lead:
+          "MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。",
+        actions: {
+          primary: "重要情報を見る",
+          resources: "PDFとURLを見る",
+          glossary: "難しい単語を確認",
+          notes: "学習メモへ",
+        },
+        navItems: [
+          { id: "overview", label: "概要" },
+          { id: "resources", label: "資料" },
+          { id: "important", label: "重要情報" },
+          { id: "data", label: "データと前処理" },
+          { id: "model", label: "モデル" },
+          { id: "metrics", label: "精度" },
+          { id: "glossary", label: "用語" },
+          { id: "todo", label: "卒研メモ" },
+        ],
+      },
+      notes: {
+        note: "論文を理解しながら、自分の言葉で疑問・気づき・次の行動を残すためのページ。",
+        eyebrow: "Study Notes / Understanding First",
+        title: "理解を深めるための研究メモ",
+        lead:
+          "このページは、論文の内容やノートブックの処理を自分で説明できるようにするための記録場所。完成原稿ではなく、理解の途中経過を残すために使う。",
+        actions: {
+          primary: "今の焦点を見る",
+          resources: "論文メモへ戻る",
+          glossary: "曖昧な点を見る",
+          notes: "学習メモへ",
+        },
+        navItems: [
+          { id: "overview", label: "概要" },
+          { id: "focus", label: "今の焦点" },
+          { id: "understanding", label: "理解メモ" },
+          { id: "questions", label: "曖昧な点" },
+          { id: "log", label: "実験ログ" },
+          { id: "next", label: "次にやること" },
+        ],
+      },
+    },
   },
   en: {
     htmlLang: "en",
     brand: ["Lumbar MRI", "Segmentation"],
-    note: "English presentation version of the Ahmed et al. (2025) paper memo.",
     navLabel: "Page navigation",
-    eyebrow: "Ahmed et al. 2025 / Modified U-Net",
-    title: "Four-Class Lumbar MRI Segmentation",
-    lead:
-      "This page summarizes a deep learning approach that classifies each MRI pixel into background, vertebrae, spinal canal, or intervertebral discs. The key idea is the combination of careful preprocessing, a modified U-Net, and a Combined Loss.",
-    actions: {
-      primary: "Key facts",
-      resources: "PDF and links",
-      glossary: "Terminology",
+    pageLinks: {
+      memo: { href: homeHref, label: "Paper Memo" },
+      notes: { href: notesHref, label: "Study Notes" },
     },
-    navItems: [
-      { id: "overview", label: "Overview" },
-      { id: "resources", label: "Sources" },
-      { id: "important", label: "Key Facts" },
-      { id: "data", label: "Data Pipeline" },
-      { id: "model", label: "Model" },
-      { id: "metrics", label: "Metrics" },
-      { id: "glossary", label: "Terms" },
-      { id: "todo", label: "Project Plan" },
-    ],
+    pages: {
+      memo: {
+        note: "English presentation version of the Ahmed et al. (2025) paper memo.",
+        eyebrow: "Ahmed et al. 2025 / Modified U-Net",
+        title: "Four-Class Lumbar MRI Segmentation",
+        lead:
+          "This page summarizes a deep learning approach that classifies each MRI pixel into background, vertebrae, spinal canal, or intervertebral discs. The key idea is the combination of careful preprocessing, a modified U-Net, and a Combined Loss.",
+        actions: {
+          primary: "Key facts",
+          resources: "PDF and links",
+          glossary: "Terminology",
+          notes: "Study notes",
+        },
+        navItems: [
+          { id: "overview", label: "Overview" },
+          { id: "resources", label: "Sources" },
+          { id: "important", label: "Key Facts" },
+          { id: "data", label: "Data Pipeline" },
+          { id: "model", label: "Model" },
+          { id: "metrics", label: "Metrics" },
+          { id: "glossary", label: "Terms" },
+          { id: "todo", label: "Project Plan" },
+        ],
+      },
+      notes: {
+        note: "A workspace for questions, understanding notes, and next actions while reading the paper.",
+        eyebrow: "Study Notes / Understanding First",
+        title: "Research Notes for Learning",
+        lead:
+          "Use this page to write what you understand, what still feels unclear, and what you want to check next. It is meant to support learning, not polished presentation output.",
+        actions: {
+          primary: "Current focus",
+          resources: "Back to memo",
+          glossary: "Open questions",
+          notes: "Study notes",
+        },
+        navItems: [
+          { id: "overview", label: "Overview" },
+          { id: "focus", label: "Current Focus" },
+          { id: "understanding", label: "Understanding" },
+          { id: "questions", label: "Questions" },
+          { id: "log", label: "Log" },
+          { id: "next", label: "Next Actions" },
+        ],
+      },
+    },
   },
 } as const;
 
 const t = copy[language];
+const pageCopy = t.pages[page];
 ---
 
 <!doctype html>
@@ -86,13 +149,21 @@ const t = copy[language];
           <small>Research Memo</small>
           <strong>{t.brand[0]}<br />{t.brand[1]}</strong>
         </div>
+        <div class="page-links" aria-label="Page switcher">
+          <a class:list={["page-link", { active: page === "memo" }]} href={t.pageLinks.memo.href}>
+            {t.pageLinks.memo.label}
+          </a>
+          <a class:list={["page-link", { active: page === "notes" }]} href={t.pageLinks.notes.href}>
+            {t.pageLinks.notes.label}
+          </a>
+        </div>
         <div class="language-tabs" aria-label="Language switcher">
           <a class:list={["language-tab", { active: language === "ja" }]} href={homeHref}>日本語</a>
           <a class:list={["language-tab", { active: language === "en" }]} href={englishHref}>English</a>
         </div>
         <ol class="nav">
           {
-            t.navItems.map((item, index) => (
+            pageCopy.navItems.map((item, index) => (
               <li>
                 <a href={`#${item.id}`}>
                   {item.label}
@@ -103,20 +174,21 @@ const t = copy[language];
           }
         </ol>
         <p class="sidebar-note">
-          {t.note}
+          {pageCopy.note}
         </p>
       </aside>
 
       <main>
         <header class="hero" id="overview">
           <div class="reveal">
-            <span class="eyebrow">{t.eyebrow}</span>
-            <h1>{t.title}</h1>
-            <p class="lead">{t.lead}</p>
+            <span class="eyebrow">{pageCopy.eyebrow}</span>
+            <h1>{pageCopy.title}</h1>
+            <p class="lead">{pageCopy.lead}</p>
             <div class="hero-actions">
-              <a class="button primary" href="#important">{t.actions.primary}</a>
-              <a class="button" href="#resources">{t.actions.resources}</a>
-              <a class="button" href="#glossary">{t.actions.glossary}</a>
+              <a class="button primary" href={page === "memo" ? "#important" : "#focus"}>{pageCopy.actions.primary}</a>
+              <a class="button" href={page === "memo" ? "#resources" : homeHref}>{pageCopy.actions.resources}</a>
+              <a class="button" href={page === "memo" ? "#glossary" : "#questions"}>{pageCopy.actions.glossary}</a>
+              {page === "memo" && <a class="button" href={notesHref}>{pageCopy.actions.notes}</a>}
             </div>
           </div>
           <SpineVisual language={language} />

@@ -82,6 +82,52 @@ SP/
 - **データ保存**: Google Drive
 - **コード編集**: ローカル
 
+## 起動方法
+
+このリポジトリには 2 つの実行対象があります。
+
+- `spine_segmentation.ipynb`
+  - 論文再現用のメインノートブック
+  - **Google Colab で実行**
+- Astro サイト
+  - 論文メモと研究メモの表示用サイト
+  - **ローカルで実行**
+
+### Astro サイトをローカルで起動
+
+前提:
+
+- Node.js `>=22.12.0`
+- `npm install` 済み
+
+開発サーバー:
+
+```bash
+npm run dev
+```
+
+- 通常は `http://127.0.0.1:4321/`
+- 研究メモページは `http://127.0.0.1:4321/notes/`
+- 英語ページは `http://127.0.0.1:4321/en/`
+
+本番ビルド:
+
+```bash
+npm run build
+```
+
+- 出力先は `dist/`
+
+ビルド結果の確認:
+
+```bash
+npm run preview
+```
+
+### Colab ノートブックの実行
+
+`spine_segmentation.ipynb` は Astro ではなく、Google Colab で実行する。
+
 ### Colab での実行方法
 
 1. `spine_segmentation.ipynb` を Google Colab で開く
