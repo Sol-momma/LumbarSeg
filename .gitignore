@@ -1,5 +1,24 @@
+<<<<<<< HEAD
 node_modules/
 dist/
 .astro/
 .DS_Store
 npm-debug.log*
+=======
+.DS_Store
+
+# Astro build artifacts
+node_modules/
+dist/
+.astro/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Jupyter / Python cache artifacts
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+>>>>>>> 0f417cc (add:gitignore)
