@@ -1,0 +1,25 @@
+---
+interface KpiItem {
+  label: string;
+  value: string;
+  text: string;
+}
+
+interface Props {
+  items: KpiItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="kpi-grid">
+  {
+    items.map((item) => (
+      <div class="kpi">
+        <small>{item.label}</small>
+        <strong>{item.value}</strong>
+        <p>{item.text}</p>
+      </div>
+    ))
+  }
+</div>
