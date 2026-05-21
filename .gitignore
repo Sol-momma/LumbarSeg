@@ -6,10 +6,16 @@ node_modules/
 dist/
 .astro/
 
+# Nix / direnv artifacts
+.direnv/
+result
+result-*
+
 # Environment files
 .env
 .env.*
 !.env.example
+.venv/
 
 # Jupyter / Python cache artifacts
 .ipynb_checkpoints/

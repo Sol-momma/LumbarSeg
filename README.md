@@ -53,6 +53,25 @@ augmentation, and error analysis.
 
 ## Method Overview
 
+### Research Workflow
+
+```mermaid
+flowchart TD
+    A["Ahmed et al. (2025)<br/>baseline specification"] --> B["SPIDER dataset<br/>3D MHA volumes and masks"]
+    B --> C["Preprocessing<br/>extract sagittal 2D slices"]
+    C --> D["Label mapping<br/>background / vertebrae / canal / IVDs"]
+    D --> E["Slice filtering<br/>remove incomplete or highly imbalanced samples"]
+    E --> F["Modified U-Net baseline<br/>Leaky ReLU + Glorot init"]
+    F --> G["Combined Loss<br/>0.6 Focal + 0.4 Dice"]
+    G --> H["Training<br/>early stopping on validation Mean IoU"]
+    H --> I["Evaluation<br/>Dice, IoU, per-class analysis"]
+    I --> J{"Dice around 0.97<br/>reproduced?"}
+    J -- "No" --> K["Debug pipeline<br/>labels, filtering, split, augmentation"]
+    K --> C
+    J -- "Yes" --> L["Improve baseline<br/>architecture, loss, augmentation"]
+    L --> M["Compare against paper<br/>report gains and failures"]
+```
+
 ### Data Pipeline
 
 ```text
@@ -119,11 +138,21 @@ cd LumbarSeg
 
 ### Environment
 
+Recommended for local development:
+
 ```bash
-python3 -m venv .venv
+nix develop
+```
+
+Then create a Python virtual environment inside the Nix shell:
+
+```bash
+python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-baseline.txt
 ```
+
+See [docs/nix.md](docs/nix.md) for the full Nix workflow.
 
 For Colab:
 
@@ -252,6 +281,7 @@ python evaluate.py \
 The research page is built with Astro.
 
 ```bash
+nix develop
 npm install
 npm run dev
 ```
@@ -289,6 +319,7 @@ LumbarSeg/
 
 - [Japanese README](docs/readme_ja.md)
 - [Paper overview](docs/overview.md)
+- [Nix development environment](docs/nix.md)
 - [Project goals](docs/project_goals.md)
 - [Preprocessing notes](docs/preprocessing.md)
 - [Architecture notes](docs/architecture.md)
