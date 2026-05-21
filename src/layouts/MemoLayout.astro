@@ -19,7 +19,7 @@ const notesHref = `${baseUrl}notes/`;
 const copy = {
   ja: {
     htmlLang: "ja",
-    brand: ["腰椎MRI", "セグメンテーション"],
+    brand: ["LumbarSeg", "腰椎MRI解析"],
     navLabel: "ページ内ナビゲーション",
     pageLinks: {
       memo: { href: homeHref, label: "論文メモ" },
@@ -29,7 +29,7 @@ const copy = {
       memo: {
         note: "Ahmed et al. (2025) の内容を、発表準備と実装メモ用に再整理したページ。",
         eyebrow: "Ahmed et al. 2025 / Modified U-Net",
-        title: "腰椎MRIを4クラスに自動分割する研究メモ",
+        title: "LumbarSeg: 腰椎MRIを4クラスに自動分割する研究",
         lead: "MRI画像から背景・椎体・脊柱管・椎間板をピクセル単位で分類する。論文の核心は、前処理、U-Net改良、Combined Lossを組み合わせて高精度なセグメンテーションを実現した点にある。",
         actions: {
           primary: "重要情報を見る",
@@ -43,6 +43,7 @@ const copy = {
           { id: "important", label: "重要情報" },
           { id: "data", label: "データと前処理" },
           { id: "model", label: "モデル" },
+          { id: "experiments", label: "実験" },
           { id: "metrics", label: "精度" },
           { id: "glossary", label: "用語" },
           { id: "todo", label: "卒研メモ" },
@@ -72,7 +73,7 @@ const copy = {
   },
   en: {
     htmlLang: "en",
-    brand: ["Lumbar MRI", "Segmentation"],
+    brand: ["LumbarSeg", "MRI Segmentation"],
     navLabel: "Page navigation",
     pageLinks: {
       memo: { href: homeHref, label: "Paper Memo" },
@@ -82,7 +83,7 @@ const copy = {
       memo: {
         note: "English presentation version of the Ahmed et al. (2025) paper memo.",
         eyebrow: "Ahmed et al. 2025 / Modified U-Net",
-        title: "Four-Class Lumbar MRI Segmentation",
+        title: "LumbarSeg: Four-Class Lumbar MRI Segmentation",
         lead: "This page summarizes a deep learning approach that classifies each MRI pixel into background, vertebrae, spinal canal, or intervertebral discs. The key idea is the combination of careful preprocessing, a modified U-Net, and a Combined Loss.",
         actions: {
           primary: "Key facts",
@@ -96,6 +97,7 @@ const copy = {
           { id: "important", label: "Key Facts" },
           { id: "data", label: "Data Pipeline" },
           { id: "model", label: "Model" },
+          { id: "experiments", label: "Experiment" },
           { id: "metrics", label: "Metrics" },
           { id: "glossary", label: "Terms" },
           { id: "todo", label: "Project Plan" },
@@ -142,7 +144,7 @@ const pageCopy = t.pages[page];
     <div class="shell">
       <aside class="sidebar" aria-label={t.navLabel}>
         <div class="brand">
-          <small>Research Memo</small>
+          <small>Research Project</small>
           <strong>{t.brand[0]}<br />{t.brand[1]}</strong>
         </div>
         <div class="page-links" aria-label="Page switcher">
@@ -280,5 +282,6 @@ const pageCopy = t.pages[page];
       addEventListener("resize", updateProgress);
       updateProgress();
     </script>
+    <script src={`${baseUrl}baseline-showcase.js`}></script>
   </body>
 </html>

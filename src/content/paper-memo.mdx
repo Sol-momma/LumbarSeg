@@ -1,6 +1,6 @@
 ---
-title: "腰椎MRIセグメンテーション論文メモ"
-description: "Ahmed et al. (2025) の腰椎MRIセグメンテーション論文を、発表準備と実装メモ用に整理したAstro + MDXサイト。"
+title: "LumbarSeg"
+description: "Ahmed et al. (2025) の腰椎MRIセグメンテーション論文を再現・改良する研究プロジェクトサイト。"
 ---
 
 import Section from "../components/Section.astro";
@@ -14,6 +14,7 @@ import MetricsTable from "../components/MetricsTable.astro";
 import Glossary from "../components/Glossary.astro";
 import Timeline from "../components/Timeline.astro";
 import Callout from "../components/Callout.astro";
+import BaselineShowcase from "../components/BaselineShowcase.astro";
 
 <Section
   id="resources"
@@ -144,6 +145,14 @@ import Callout from "../components/Callout.astro";
       },
     ]}
   />
+</Section>
+
+<Section
+  id="experiments"
+  title="ベースライン実験ビューア"
+  summary="FastGS のプロジェクトページを参考に、処理段階をタブで切り替えながら、実装した CLI の流れを確認できるようにした。"
+>
+  <BaselineShowcase />
 </Section>
 
 <Section

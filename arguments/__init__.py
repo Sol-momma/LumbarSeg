@@ -1,0 +1,109 @@
+from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class DataParams:
+    data_root: Path
+    output_root: Path
+    sequences: str | None
+    target_height: int
+    target_width: int
+    min_classes: int
+    imbalance_threshold: float
+    force_reprocess: bool
+
+
+@dataclass
+class ModelParams:
+    input_channels: int
+    num_classes: int
+    dropout_rate: float
+    leaky_relu_alpha: float
+
+
+@dataclass
+class OptimizationParams:
+    batch_size: int
+    epochs: int
+    learning_rate: float
+    focal_weight: float
+    focal_gamma: float
+    patience: int
+    seed: int
+
+
+def add_data_args(parser: ArgumentParser) -> None:
+    group = parser.add_argument_group("Data Parameters")
+    group.add_argument(
+        "--data_root",
+        type=Path,
+        default=Path("/content/drive/MyDrive/SPIDER/DataSet"),
+        help="SPIDER dataset root containing images/, masks/, and overview CSV.",
+    )
+    group.add_argument(
+        "--output_root",
+        type=Path,
+        default=Path("/content/drive/MyDrive/SPIDER/processed_baseline"),
+        help="Directory where preprocessed slices and metadata are written.",
+    )
+    group.add_argument(
+        "--sequences",
+        type=str,
+        default=None,
+        help="Optional comma-separated sequence filter: T1,T2,T2_SPACE.",
+    )
+    group.add_argument("--target_height", type=int, default=512)
+    group.add_argument("--target_width", type=int, default=640)
+    group.add_argument("--min_classes", type=int, default=4)
+    group.add_argument("--imbalance_threshold", type=float, default=0.55)
+    group.add_argument("--force_reprocess", action="store_true")
+
+
+def add_model_args(parser: ArgumentParser) -> None:
+    group = parser.add_argument_group("Model Parameters")
+    group.add_argument("--input_channels", type=int, default=1)
+    group.add_argument("--num_classes", type=int, default=4)
+    group.add_argument("--dropout_rate", type=float, default=0.5)
+    group.add_argument("--leaky_relu_alpha", type=float, default=0.1)
+
+
+def add_optimization_args(parser: ArgumentParser) -> None:
+    group = parser.add_argument_group("Optimization Parameters")
+    group.add_argument("--batch_size", type=int, default=8)
+    group.add_argument("--epochs", type=int, default=100)
+    group.add_argument("--learning_rate", type=float, default=1e-4)
+    group.add_argument("--focal_weight", type=float, default=0.6)
+    group.add_argument("--focal_gamma", type=float, default=4.0)
+    group.add_argument("--patience", type=int, default=15)
+    group.add_argument("--seed", type=int, default=42)
+
+
+def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, OptimizationParams]:
+    data = DataParams(
+        data_root=args.data_root,
+        output_root=args.output_root,
+        sequences=args.sequences,
+        target_height=args.target_height,
+        target_width=args.target_width,
+        min_classes=args.min_classes,
+        imbalance_threshold=args.imbalance_threshold,
+        force_reprocess=args.force_reprocess,
+    )
+    model = ModelParams(
+        input_channels=args.input_channels,
+        num_classes=args.num_classes,
+        dropout_rate=args.dropout_rate,
+        leaky_relu_alpha=args.leaky_relu_alpha,
+    )
+    opt = OptimizationParams(
+        batch_size=args.batch_size,
+        epochs=args.epochs,
+        learning_rate=args.learning_rate,
+        focal_weight=args.focal_weight,
+        focal_gamma=args.focal_gamma,
+        patience=args.patience,
+        seed=args.seed,
+    )
+    return data, model, opt

@@ -1,8 +1,8 @@
-# 卒業プロジェクト: 目標と計画
+# LumbarSeg: 目標と計画
 
 ## プロジェクト概要
 
-腰椎MRIセグメンテーション論文の再現と改良を行う卒業プロジェクト。
+LumbarSeg は、腰椎MRIセグメンテーション論文の再現と改良を行う卒業研究プロジェクト。
 
 **論文**: _Pioneering Precision in Lumbar Spine MRI Segmentation with Advanced Deep Learning and Data Enhancement_ (Ahmed et al., 2025)
 

@@ -1,0 +1,118 @@
+---
+const stages = [
+  {
+    id: "preprocess",
+    label: "Preprocess",
+    title: "MHA volume to 2D baseline slices",
+    lead: "SPIDER の 3D MHA を sagittal 2D slice に展開し、18相当のラベルを4クラスへ統合する。",
+    steps: ["sagittal axis inference", "512 x 640 resize", "4-class label map", "55% foreground filter"],
+    command: "python preprocess.py --sequences T2_SPACE",
+    stat: "3000",
+    unit: "target slices",
+  },
+  {
+    id: "train",
+    label: "Train",
+    title: "Modified U-Net training run",
+    lead: "Leaky ReLU、Glorot 初期化、512ch bottleneck を持つ U-Net を Combined Loss で学習する。",
+    steps: ["batch size 8", "100 epochs", "Adam lr=1e-4", "checkpoint by val Mean IoU"],
+    command: "python train.py --batch_size 8 --epochs 100",
+    stat: "0.6",
+    unit: "focal weight",
+  },
+  {
+    id: "evaluate",
+    label: "Evaluate",
+    title: "Class-wise segmentation metrics",
+    lead: "Validation slice で Dice、IoU、Precision、Recall、F1 を構造別に出力する。",
+    steps: ["Background", "Vertebrae", "Spinal Canal", "IVDs"],
+    command: "python evaluate.py --model_path checkpoints/best_model.keras",
+    stat: "0.97",
+    unit: "paper Dice",
+  },
+];
+
+const metricRows = [
+  { label: "IVDs", dice: "0.9688", iou: "0.9476", baseline: "pending" },
+  { label: "Vertebrae", dice: "0.9712", iou: "0.9461", baseline: "pending" },
+  { label: "Spinal Canal", dice: "0.9671", iou: "0.9501", baseline: "pending" },
+];
+---
+
+<div class="baseline-showcase" data-baseline-showcase>
+  <div class="showcase-tabs" role="tablist" aria-label="Baseline workflow">
+    {
+      stages.map((stage, index) => (
+        <button
+          class:list={["showcase-tab", { active: index === 0 }]}
+          type="button"
+          role="tab"
+          aria-selected={index === 0 ? "true" : "false"}
+          aria-controls={`panel-${stage.id}`}
+          data-showcase-tab={stage.id}
+        >
+          {stage.label}
+        </button>
+      ))
+    }
+  </div>
+
+  <div class="showcase-stage">
+    {
+      stages.map((stage, index) => (
+        <section
+          class:list={["showcase-panel", { active: index === 0 }]}
+          id={`panel-${stage.id}`}
+          role="tabpanel"
+          data-showcase-panel={stage.id}
+        >
+          <div class="showcase-copy">
+            <span class="stage-kicker">{stage.label}</span>
+            <h3>{stage.title}</h3>
+            <p>{stage.lead}</p>
+            <ul>
+              {stage.steps.map((step) => (
+                <li>{step}</li>
+              ))}
+            </ul>
+            <code>{stage.command}</code>
+          </div>
+
+          <button
+            class="showcase-visual"
+            type="button"
+            aria-label={`${stage.label} visualization`}
+            data-expandable-visual
+          >
+            <span class="visual-grid" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <strong>{stage.stat}</strong>
+            <small>{stage.unit}</small>
+          </button>
+        </section>
+      ))
+    }
+  </div>
+
+  <div class="metric-switcher" data-metric-switcher>
+    <div class="metric-switcher-head">
+      <h3>Paper target vs current baseline</h3>
+      <div class="metric-buttons" role="tablist" aria-label="Metric comparison">
+        <button class="active" type="button" data-metric-tab="dice">Dice</button>
+        <button type="button" data-metric-tab="iou">IoU</button>
+      </div>
+    </div>
+    <div class="metric-comparison" data-metric-panel>
+      {
+        metricRows.map((row) => (
+          <div class="metric-row" data-paper-dice={row.dice} data-paper-iou={row.iou}>
+            <span>{row.label}</span>
+            <strong>{row.dice}</strong>
+            <em>{row.baseline}</em>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>

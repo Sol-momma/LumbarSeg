@@ -1,164 +1,304 @@
-# Lumbar Spine MRI Segmentation
+<div align="center">
+  <h1>LumbarSeg</h1>
+  <h2>Four-Class Lumbar MRI Segmentation with a Paper-Aligned U-Net Baseline</h2>
 
-腰椎MRIセグメンテーションの深層学習モデル再現・改良プロジェクト。
+  [Project Page](https://sol-momma.github.io/LumbarSeg/) |
+  [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) |
+  [SPIDER Dataset](https://doi.org/10.5281/zenodo.10159290) |
+  [Japanese Notes](docs/readme_ja.md)
+</div>
 
-## 概要
+---
 
-[Ahmed et al. (2025)](https://www.sciencedirect.com/science/article/pii/S2666827025000180) の論文を再現し、さらに精度を改良することを目指す卒業プロジェクト。
+## What Is LumbarSeg?
 
-**タスク**: MRI画像から以下の4クラスをピクセル単位で自動セグメンテーション
+LumbarSeg is a graduation research project for reproducing and extending the
+lumbar spine MRI segmentation method proposed by Ahmed et al. (2025).
 
-| クラス | 構造                  | 臨床的意義           |
-| ------ | --------------------- | -------------------- |
-| 0      | 背景 (Background)     | —                    |
-| 1      | 椎体 (Vertebrae)      | 骨折・変形の評価     |
-| 2      | 脊柱管 (Spinal Canal) | 狭窄症の診断         |
-| 3      | 椎間板 (IVDs)         | ヘルニア・変性の評価 |
+The baseline segments sagittal lumbar MRI slices into four pixel-wise classes:
 
-## 手法
+| Class | Structure | Clinical role |
+| --- | --- | --- |
+| 0 | Background | Non-anatomical region |
+| 1 | Vertebrae | Bone structure assessment |
+| 2 | Spinal Canal | Stenosis-related anatomy |
+| 3 | Intervertebral Discs | Disc degeneration / herniation analysis |
 
-- **モデル**: Modified U-Net (Leaky ReLU, Glorot初期化, 512ch追加層)
-- **損失関数**: Combined Loss = 0.6 x Focal Loss (gamma=4.0) + 0.4 x Dice Loss
-- **データ前処理**: 18ラベル → 4クラス統合、クラス不均衡フィルタリング (閾値55%)
+The first goal is to reproduce the reported Dice score around **0.97**. The
+second goal is to improve the baseline through stronger architectures, losses,
+augmentation, and error analysis.
 
-## データセット
+## Why This Project Matters
 
-[SPIDER Dataset](https://doi.org/10.5281/zenodo.10159290) (Nature Scientific Data 2024)
+- **Paper-aligned baseline**: Modified U-Net with Leaky ReLU, Glorot
+  initialization, and Combined Loss.
+- **Real medical dataset**: SPIDER contains 218 patients and 447 MRI series from
+  multiple centers.
+- **Reproducible training entrypoints**: preprocessing, training, and evaluation
+  are available as root-level CLI scripts.
+- **Research page included**: the Astro site summarizes the paper, model,
+  metrics, and experiment workflow.
+- **Cost-conscious workflow**: small local/Colab smoke tests first; GPU training
+  only after the pipeline is verified.
 
-- 218患者 / 447 MRIシリーズ (T1, T2, T2 SPACE)
-- オランダ4病院からのマルチセンター収集
-- ライセンス: CC-BY 4.0
+## Latest Updates
 
-## プロジェクト目標
+#### [2026-05] FastGS-style repository cleanup
 
-### Stage 1: 論文の再現
+- Added CLI entrypoints: `preprocess.py`, `train.py`, `evaluate.py`
+- Split baseline code into `spine_baseline/`
+- Added the interactive Astro experiment viewer
+- Renamed the research project identity to **LumbarSeg**
+- Moved the original Japanese README to [docs/readme_ja.md](docs/readme_ja.md)
 
-論文と同等の精度を達成する。
+## Method Overview
 
-| 構造         | 論文 Dice | 比較 (nn-UNET) |
-| ------------ | --------- | -------------- |
-| IVDs         | 0.9688    | 0.86           |
-| Vertebrae    | 0.9712    | 0.92           |
-| Spinal Canal | 0.9671    | 0.92           |
+### Data Pipeline
 
-### Stage 2: 精度の改良
-
-アルゴリズムの改良により Dice係数をさらに向上させる。
-
-## ドキュメント
-
-| ドキュメント                                             | 内容                                                     |
-| -------------------------------------------------------- | -------------------------------------------------------- |
-| [論文概要・結果サマリ](docs/overview.md)                 | 論文の要点、データセット、結果の数値まとめ               |
-| [プロジェクト目標・評価指標](docs/project_goals.md)      | Stage 1/2 の目標、T1/T2/T2 SPACE解説、Dice等の指標説明   |
-| [教授向け発表アウトライン](docs/presentation_outline.md) | 15-20分の発表構成、各スライドのポイント                  |
-| [データ前処理パイプライン](docs/preprocessing.md)        | 3D→2D変換、ラベルマッピング、フィルタリング手順          |
-| [モデル構成・損失関数](docs/architecture.md)             | Modified U-Net詳細、Focal+Dice Loss数式、学習設定        |
-| [SPIDERデータセット詳細](docs/dataset_spider.md)         | 病院別データ、分割、アノテーション方法、ベースライン結果 |
-| [実装計画](docs/implementation_plan.md)                  | フェーズ分け、技術選定、未確定事項                       |
-| [未解決事項](docs/open_questions.md)                     | 設計判断が必要なポイント、論文の矛盾点                   |
-| [よく��る質問 (FAQ)](docs/faq.md)                        | 発表で想定されるQ&A (データ・モデル・結果・卒プロ)       |
-
-## ディレクトリ構成
-
-```
-SP/
-├── README.md
-├── CLAUDE.md
-├── spine_segmentation.ipynb       # メインノートブック (Colab実行)
-├── docs/                          # ドキュメント (上記リンク参照)
-├── papers/                        # 論文PDF
-│   ├── paper.pdf                  #   本論文 (Ahmed et al., 2025)
-│   └── Dataset_Paper.pdf          #   データセット論文 (van der Graaf et al., 2024)
-├── data/                          # メタデータ (CSVなど)
-│   ├── *.csv                      #   SPIDER Overview (train/val分割情報)
-│   └── *.json                     #   SPIDER Dataset メタデータ
-└── outputs/                       # 学習結果・モデル保存 (今後作成)
+```text
+SPIDER 3D MHA volumes
+  -> sagittal 2D slice extraction
+  -> 512 x 640 resize
+  -> SPIDER labels mapped to 4 classes
+  -> incomplete / highly imbalanced slices filtered
+  -> TensorFlow Dataset
 ```
 
-**注意**: MRI画像データ本体はGoogle Drive上 (`/content/drive/MyDrive/SPIDER/DataSet/`) に配置。
+### Label Mapping
 
-## 実行環境
+```text
+0       -> 0 Background
+1-99    -> 1 Vertebrae
+100     -> 2 Spinal Canal
+200+    -> 3 Intervertebral Discs
+```
 
-- **コード実行**: Google Colab (GPU)
-- **データ保存**: Google Drive
-- **コード編集**: ローカル
+### Baseline Model
 
-## 起動方法
+- Modified U-Net
+- Leaky ReLU with alpha = 0.1
+- Glorot / Xavier initialization
+- 512-channel bottleneck
+- 4-channel softmax output
 
-このリポジトリには 2 つの実行対象があります。
+### Loss
 
-- `spine_segmentation.ipynb`
-  - 論文再現用のメインノートブック
-  - **Google Colab で実行**
-- Astro サイト
-  - 論文メモと研究メモの表示用サイト
-  - **ローカルで実行**
+```text
+Combined Loss = 0.6 * Focal Loss(gamma=4.0) + 0.4 * Dice Loss
+```
 
-### Astro サイトをローカルで起動
+## Target Results
 
-前提:
+Reported T2 SPACE validation performance from Ahmed et al. (2025):
 
-- Node.js `>=22.12.0`
-- `npm install` 済み
+| Structure | Dice | IoU |
+| --- | ---: | ---: |
+| IVDs | 0.9688 | 0.9476 |
+| Vertebrae | 0.9712 | 0.9461 |
+| Spinal Canal | 0.9671 | 0.9501 |
 
-開発サーバー:
+## Hardware Notes
+
+Local Mac execution is useful for code editing and small smoke tests. Full
+training should be run on a GPU environment.
+
+Recommended low-cost workflow:
+
+1. Run `--epochs 1` smoke tests locally or on free Colab.
+2. Run short `--epochs 5` experiments on free Colab.
+3. Use Colab Pro or a cloud GPU only for full training runs.
+
+## Quick Start
+
+### Clone
 
 ```bash
+git clone https://github.com/Sol-momma/LumbarSeg.git
+cd LumbarSeg
+```
+
+### Environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-baseline.txt
+```
+
+For Colab:
+
+```bash
+!git clone https://github.com/Sol-momma/LumbarSeg.git
+%cd LumbarSeg
+!pip install -r requirements-baseline.txt
+```
+
+### Dataset Organization
+
+The `--data_root` directory should contain:
+
+```text
+DataSet/
+├── images/
+│   ├── 100_t1.mha
+│   ├── 100_t2.mha
+│   └── ...
+├── masks/
+│   ├── 100_t1.mha
+│   ├── 100_t2.mha
+│   └── ...
+└── SPIDER Lumbar Spine Segmentation Overview.csv
+```
+
+The full MRI data is not stored in this repository.
+
+## Training & Evaluation
+
+### 1. Preprocess
+
+```bash
+python preprocess.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/processed_baseline
+```
+
+For a cheaper first pass:
+
+```bash
+python preprocess.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/t2_space_test \
+  --sequences T2_SPACE
+```
+
+### 2. Smoke Test
+
+Always run a short test before a full experiment:
+
+```bash
+python train.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/t2_space_test \
+  --sequences T2_SPACE \
+  --epochs 1 \
+  --batch_size 2
+```
+
+### 3. Baseline Training
+
+```bash
+python train.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/processed_baseline \
+  --batch_size 8 \
+  --epochs 100
+```
+
+Outputs:
+
+```text
+outputs/processed_baseline/
+├── images/
+├── masks/
+├── filtered_files.txt
+├── filtered_slice_stats.csv
+└── checkpoints/
+    ├── best_model.keras
+    ├── final_model.keras
+    └── training_log.csv
+```
+
+### 4. Evaluation
+
+```bash
+python evaluate.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/processed_baseline \
+  --model_path outputs/processed_baseline/checkpoints/best_model.keras
+```
+
+Quick validation subset:
+
+```bash
+python evaluate.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/processed_baseline \
+  --model_path outputs/processed_baseline/checkpoints/best_model.keras \
+  --limit 100
+```
+
+<details>
+<summary><strong>Command Line Arguments</strong></summary>
+
+| Argument | Default | Description |
+| --- | ---: | --- |
+| `--target_height` | `512` | Input slice height |
+| `--target_width` | `640` | Input slice width |
+| `--num_classes` | `4` | Segmentation classes |
+| `--sequences` | `None` | Optional filter: `T1`, `T2`, `T2_SPACE` |
+| `--imbalance_threshold` | `0.55` | Dominant foreground class filter |
+| `--batch_size` | `8` | Training batch size |
+| `--epochs` | `100` | Maximum training epochs |
+| `--learning_rate` | `1e-4` | Adam learning rate |
+| `--focal_weight` | `0.6` | Focal term weight in Combined Loss |
+| `--focal_gamma` | `4.0` | Focal Loss gamma |
+| `--dropout_rate` | `0.5` | U-Net dropout rate |
+| `--patience` | `15` | Early stopping patience |
+
+</details>
+
+## Website
+
+The research page is built with Astro.
+
+```bash
+npm install
 npm run dev
 ```
 
-- 通常は `http://127.0.0.1:4321/`
-- 研究メモページは `http://127.0.0.1:4321/notes/`
-- 英語ページは `http://127.0.0.1:4321/en/`
+Local URLs:
 
-本番ビルド:
+- `http://127.0.0.1:4321/LumbarSeg/`
+- `http://127.0.0.1:4321/LumbarSeg/notes/`
+- `http://127.0.0.1:4321/LumbarSeg/en/`
+
+Production build:
 
 ```bash
 npm run build
 ```
 
-- 出力先は `dist/`
+## Repository Structure
 
-ビルド結果の確認:
-
-```bash
-npm run preview
+```text
+LumbarSeg/
+├── preprocess.py
+├── train.py
+├── evaluate.py
+├── arguments/
+├── spine_baseline/
+├── spine_segmentation.ipynb
+├── src/
+├── public/
+├── docs/
+├── data/
+└── requirements-baseline.txt
 ```
 
-コード整形:
+## Documentation
 
-```bash
-npm run format
-```
+- [Japanese README](docs/readme_ja.md)
+- [Paper overview](docs/overview.md)
+- [Project goals](docs/project_goals.md)
+- [Preprocessing notes](docs/preprocessing.md)
+- [Architecture notes](docs/architecture.md)
+- [SPIDER dataset notes](docs/dataset_spider.md)
+- [Open questions](docs/open_questions.md)
 
-整形チェックのみ:
+## References
 
-```bash
-npm run format:check
-```
-
-- GitHub Actions でも `Prettier` workflow が `main` への push / pull request で走る
-
-### Colab ノートブックの実行
-
-`spine_segmentation.ipynb` は Astro ではなく、Google Colab で実行する。
-
-### Colab での実行方法
-
-1. `spine_segmentation.ipynb` を Google Colab で開く
-2. ランタイム → ランタイムのタイプを変更 → GPU を選択
-3. セルを上から順に実行
-
-### 必要なライブラリ
-
-- TensorFlow / Keras
-- SimpleITK (MHAファイル読み込み)
-- NumPy, Matplotlib
-- scikit-learn (評価指標)
-
-## 参考論文
-
-1. **本論文**: Ahmed, I. et al. "Pioneering Precision in Lumbar Spine MRI Segmentation with Advanced Deep Learning and Data Enhancement." _Machine Learning with Applications_, Vol.20, 2025.
-
-2. **データセット論文**: van der Graaf, J.W. et al. "Lumbar spine segmentation in MR images: a dataset and a public benchmark." _Nature Scientific Data_, 11:264, 2024.
+1. Ahmed, I. et al. "Pioneering Precision in Lumbar Spine MRI Segmentation with
+   Advanced Deep Learning and Data Enhancement." Machine Learning with
+   Applications, Vol. 20, 2025.
+2. van der Graaf, J.W. et al. "Lumbar spine segmentation in MR images: a dataset
+   and a public benchmark." Scientific Data, 11:264, 2024.

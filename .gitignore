@@ -15,4 +15,8 @@ dist/
 .ipynb_checkpoints/
 __pycache__/
 *.pyc
->>>>>>> 0f417cc (add:gitignore)
+
+# Local experiment artifacts
+outputs/
+checkpoints/
+*.keras

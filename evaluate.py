@@ -1,0 +1,41 @@
+from argparse import ArgumentParser
+
+import tensorflow as tf
+
+from arguments import add_data_args, add_model_args, add_optimization_args, get_param_groups
+from spine_baseline.losses import combined_loss
+from spine_baseline.metrics import dice_coefficient, evaluate_classwise, mean_iou
+from spine_baseline.preprocessing import filter_slices, split_train_val
+
+
+def main() -> None:
+    parser = ArgumentParser(description="Evaluate a trained baseline model.")
+    add_data_args(parser)
+    add_model_args(parser)
+    add_optimization_args(parser)
+    parser.add_argument("--model_path", required=True, help="Path to a .keras model.")
+    parser.add_argument("--limit", type=int, default=None, help="Optional validation slice limit for quick checks.")
+    args = parser.parse_args()
+    data, model_params, opt = get_param_groups(args)
+
+    kept_files, _ = filter_slices(data.output_root, data.min_classes, data.imbalance_threshold)
+    _, val_files, _ = split_train_val(data.data_root, kept_files)
+
+    model = tf.keras.models.load_model(
+        args.model_path,
+        custom_objects={
+            "loss_fn": combined_loss(alpha=opt.focal_weight, gamma=opt.focal_gamma),
+            "mean_iou": mean_iou(model_params.num_classes),
+            "dice_coefficient": dice_coefficient(model_params.num_classes),
+        },
+        compile=False,
+    )
+    results = evaluate_classwise(model, val_files, data.output_root, model_params.num_classes, limit=args.limit)
+    metrics_path = data.output_root / "validation_metrics.csv"
+    results.to_csv(metrics_path, index=False)
+    print(results)
+    print(f"Saved metrics to: {metrics_path}")
+
+
+if __name__ == "__main__":
+    main()
