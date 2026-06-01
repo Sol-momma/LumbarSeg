@@ -143,6 +143,8 @@ python evaluate.py \
   --model_path /content/drive/MyDrive/SPIDER/processed_baseline/checkpoints/best_model.keras
 ```
 
+評価結果は `validation_metrics.csv` に保存され、Dice、IoU、ASD、NSD、Precision、Recall、F1を出力する。`--nsd_tolerance` でNSDの許容距離を指定できる。
+
 短時間確認:
 
 ```bash
@@ -155,10 +157,11 @@ python evaluate.py --model_path /path/to/best_model.keras --limit 100
 | ---- | ------ | ---- |
 | `--target_height` / `--target_width` | `512` / `640` | 論文の2D入力サイズ |
 | `--num_classes` | `4` | 背景・椎体・脊柱管・椎間板 |
-| `--imbalance_threshold` | `0.55` | foreground内の支配クラス割合の除外閾値 |
+| `--imbalance_threshold` | `0.55` | 画像内の支配クラス割合の除外閾値 |
+| `--max_slices_per_sequence` | `1000` | 論文の各シーケンス1000枚に合わせる上限。`0`で無効化 |
 | `--focal_weight` | `0.6` | Combined Loss内のFocal重み |
 | `--focal_gamma` | `4.0` | Focal Lossのgamma |
-| `--dropout_rate` | `0.5` | 論文未記載のためbaseline既定値 |
+| `--dropout_rate` | `None` | 省略時は論文Figure 7のDropoutスケジュールを使用 |
 | `--learning_rate` | `1e-4` | 論文未記載のためAdam baseline既定値 |
 
 ## ノートブックとWebサイト

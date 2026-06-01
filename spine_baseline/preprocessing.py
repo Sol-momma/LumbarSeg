@@ -33,6 +33,25 @@ def map_labels(mask: np.ndarray) -> np.ndarray:
     return new_mask
 
 
+def array_axis_spacings(image: sitk.Image) -> tuple[float, float, float]:
+    """Return physical spacings in NumPy array axis order: z, y, x."""
+    spacing_x, spacing_y, spacing_z = image.GetSpacing()
+    return float(spacing_z), float(spacing_y), float(spacing_x)
+
+
+def resized_slice_spacing(
+    original_shape: tuple[int, int],
+    sagittal_axis: int,
+    axis_spacings: tuple[float, float, float],
+    target_height: int,
+    target_width: int,
+) -> np.ndarray:
+    remaining_axes = [axis for axis in range(3) if axis != sagittal_axis]
+    row_spacing = axis_spacings[remaining_axes[0]] * (original_shape[0] / target_height)
+    col_spacing = axis_spacings[remaining_axes[1]] * (original_shape[1] / target_width)
+    return np.array([row_spacing, col_spacing], dtype=np.float32)
+
+
 def infer_sagittal_axis(array_shape: tuple[int, ...]) -> int:
     """Infer the sagittal stack axis for SPIDER volumes.
 
@@ -81,13 +100,16 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
             continue
 
         try:
-            image = sitk.GetArrayFromImage(sitk.ReadImage(str(image_dir / filename))).astype(np.float32)
+            image_itk = sitk.ReadImage(str(image_dir / filename))
+            image = sitk.GetArrayFromImage(image_itk).astype(np.float32)
             mask = sitk.GetArrayFromImage(sitk.ReadImage(str(mask_path))).astype(np.int16)
             if image.shape != mask.shape:
                 stats["errors"].append(f"{filename}: shape mismatch {image.shape} vs {mask.shape}")
                 continue
 
             axis = infer_sagittal_axis(image.shape)
+            sequence = classify_sequence(filename)
+            spacings = array_axis_spacings(image_itk)
             stats["axes"][axis] = stats["axes"].get(axis, 0) + 1
 
             for slice_index, _, image_slice, mask_slice in iter_sagittal_slices(image, mask):
@@ -97,10 +119,27 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
                 mask_4class = map_labels(mask_slice)
                 image_resized = cv2.resize(image_slice, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
                 mask_resized = cv2.resize(mask_4class, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+                spacing = resized_slice_spacing(image_slice.shape, axis, spacings, target_height, target_width)
 
                 slice_name = f"{base_name}_s{slice_index:03d}.npz"
-                np.savez_compressed(output_img_dir / slice_name, image=image_resized.astype(np.float32))
-                np.savez_compressed(output_mask_dir / slice_name, mask=mask_resized.astype(np.uint8))
+                np.savez_compressed(
+                    output_img_dir / slice_name,
+                    image=image_resized.astype(np.float32),
+                    spacing=spacing,
+                    sequence=sequence,
+                    series_id=base_name,
+                    sagittal_axis=axis,
+                    slice_index=slice_index,
+                )
+                np.savez_compressed(
+                    output_mask_dir / slice_name,
+                    mask=mask_resized.astype(np.uint8),
+                    spacing=spacing,
+                    sequence=sequence,
+                    series_id=base_name,
+                    sagittal_axis=axis,
+                    slice_index=slice_index,
+                )
                 stats["total_slices"] += 1
 
             stats["files_processed"] += 1
@@ -124,12 +163,31 @@ def dominant_foreground_fraction(mask: np.ndarray) -> float:
     return max(fractions.values()) if fractions else 1.0
 
 
-def filter_slices(output_root: Path, min_classes: int, imbalance_threshold: float) -> tuple[list[str], dict]:
+def class_fractions(mask: np.ndarray, num_classes: int = 4) -> dict[int, float]:
+    counts = np.bincount(mask.astype(np.int64).ravel(), minlength=num_classes)
+    total = counts.sum()
+    if total == 0:
+        return {class_id: 0.0 for class_id in range(num_classes)}
+    return {class_id: float(counts[class_id] / total) for class_id in range(num_classes)}
+
+
+def dominant_class_fraction(mask: np.ndarray) -> float:
+    fractions = class_fractions(mask)
+    return max(fractions.values()) if fractions else 1.0
+
+
+def filter_slices(
+    output_root: Path,
+    min_classes: int,
+    imbalance_threshold: float,
+    max_slices_per_sequence: int | None = 1000,
+) -> tuple[list[str], dict]:
     mask_dir = output_root / "masks"
-    rows = []
-    kept = []
+    eligible_rows = []
+    eligible_files = []
     removed_class_count = 0
     removed_imbalance = 0
+    removed_sequence_cap = 0
 
     for mask_file in tqdm(sorted(mask_dir.glob("*.npz")), desc="Filtering slices"):
         mask = np.load(mask_file)["mask"]
@@ -138,20 +196,44 @@ def filter_slices(output_root: Path, min_classes: int, imbalance_threshold: floa
             removed_class_count += 1
             continue
 
-        max_fraction = dominant_foreground_fraction(mask)
+        max_fraction = dominant_class_fraction(mask)
         if max_fraction > imbalance_threshold:
             removed_imbalance += 1
             continue
 
-        fractions = foreground_class_fractions(mask)
-        kept.append(mask_file.name)
-        rows.append({
+        fractions = class_fractions(mask)
+        sequence = classify_sequence(get_series_id(mask_file.name))
+        eligible_files.append(mask_file.name)
+        eligible_rows.append({
             "file": mask_file.name,
-            "max_foreground_fraction": max_fraction,
+            "sequence": sequence,
+            "max_class_fraction": max_fraction,
+            "background_fraction": fractions.get(0, 0.0),
             "vertebrae_fraction": fractions.get(1, 0.0),
             "canal_fraction": fractions.get(2, 0.0),
             "ivd_fraction": fractions.get(3, 0.0),
         })
+
+    grouped: dict[str, list[tuple[str, dict]]] = {}
+    for filename, row in zip(eligible_files, eligible_rows):
+        grouped.setdefault(row["sequence"], []).append((filename, row))
+
+    kept = []
+    rows = []
+    kept_by_sequence: dict[str, int] = {}
+    for sequence, items in grouped.items():
+        if max_slices_per_sequence is None or len(items) <= max_slices_per_sequence:
+            selected_indices = set(range(len(items)))
+        else:
+            selected_indices = set(np.linspace(0, len(items) - 1, max_slices_per_sequence, dtype=int))
+
+        for index, (filename, row) in enumerate(items):
+            if index not in selected_indices:
+                removed_sequence_cap += 1
+                continue
+            kept_by_sequence[sequence] = kept_by_sequence.get(sequence, 0) + 1
+            kept.append(filename)
+            rows.append(row)
 
     output_root.mkdir(parents=True, exist_ok=True)
     with (output_root / "filtered_files.txt").open("w") as handle:
@@ -163,7 +245,9 @@ def filter_slices(output_root: Path, min_classes: int, imbalance_threshold: floa
         "before_filtering": len(list(mask_dir.glob("*.npz"))),
         "removed_class_count": removed_class_count,
         "removed_imbalance": removed_imbalance,
+        "removed_sequence_cap": removed_sequence_cap,
         "kept": len(kept),
+        "kept_by_sequence": kept_by_sequence,
     }
     return kept, stats
 

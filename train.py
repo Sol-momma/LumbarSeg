@@ -37,7 +37,12 @@ def main() -> None:
         sequences=data.sequences,
         force=data.force_reprocess,
     )
-    kept_files, filter_stats = filter_slices(data.output_root, data.min_classes, data.imbalance_threshold)
+    kept_files, filter_stats = filter_slices(
+        data.output_root,
+        data.min_classes,
+        data.imbalance_threshold,
+        data.max_slices_per_sequence,
+    )
     train_files, val_files, unmatched = split_train_val(data.data_root, kept_files)
 
     if not train_files or not val_files:

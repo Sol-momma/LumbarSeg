@@ -95,9 +95,10 @@ SPIDER 3D MHA volumes
 ### Baseline Model
 
 - Modified U-Net
-- Leaky ReLU with alpha = 0.1
+- Custom upsample block with Leaky ReLU alpha = 0.1
 - Glorot / Xavier initialization
-- 512-channel bottleneck
+- Paper Figure 7 channel schedule: 16 -> 32 -> 64 -> 128 -> 256 -> 512
+- Paper dropout schedule: 0.1 / 0.2 / 0.3 by depth
 - 4-channel softmax output
 
 ### Loss
@@ -246,6 +247,10 @@ python evaluate.py \
   --model_path outputs/processed_baseline/checkpoints/best_model.keras
 ```
 
+Evaluation writes Dice, IoU, ASD, NSD, precision, recall, and F1 to
+`validation_metrics.csv`. Use `--nsd_tolerance` to set the NSD surface-distance
+tolerance.
+
 Quick validation subset:
 
 ```bash
@@ -265,13 +270,14 @@ python evaluate.py \
 | `--target_width` | `640` | Input slice width |
 | `--num_classes` | `4` | Segmentation classes |
 | `--sequences` | `None` | Optional filter: `T1`, `T2`, `T2_SPACE` |
-| `--imbalance_threshold` | `0.55` | Dominant foreground class filter |
+| `--imbalance_threshold` | `0.55` | Dominant class-fraction filter |
+| `--max_slices_per_sequence` | `1000` | Paper-aligned kept-slice cap per sequence; use `0` to disable |
 | `--batch_size` | `8` | Training batch size |
 | `--epochs` | `100` | Maximum training epochs |
 | `--learning_rate` | `1e-4` | Adam learning rate |
 | `--focal_weight` | `0.6` | Focal term weight in Combined Loss |
 | `--focal_gamma` | `4.0` | Focal Loss gamma |
-| `--dropout_rate` | `0.5` | U-Net dropout rate |
+| `--dropout_rate` | `None` | Optional global override; omitted means paper schedule |
 | `--patience` | `15` | Early stopping patience |
 
 </details>
@@ -325,6 +331,7 @@ LumbarSeg/
 - [Architecture notes](docs/architecture.md)
 - [SPIDER dataset notes](docs/dataset_spider.md)
 - [Open questions](docs/open_questions.md)
+- [Baseline improvement proposals](docs/improvement_proposals.md)
 
 ## References
 

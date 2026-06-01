@@ -3,6 +3,7 @@ SimpleITK
 opencv-python
 numpy
 pandas
+scipy
 scikit-learn
 tqdm
 matplotlib

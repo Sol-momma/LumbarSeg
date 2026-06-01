@@ -15,10 +15,21 @@ def main() -> None:
     add_optimization_args(parser)
     parser.add_argument("--model_path", required=True, help="Path to a .keras model.")
     parser.add_argument("--limit", type=int, default=None, help="Optional validation slice limit for quick checks.")
+    parser.add_argument(
+        "--nsd_tolerance",
+        type=float,
+        default=1.0,
+        help="Surface-distance tolerance for NSD. Uses mm when preprocessed spacing metadata is available.",
+    )
     args = parser.parse_args()
     data, model_params, opt = get_param_groups(args)
 
-    kept_files, _ = filter_slices(data.output_root, data.min_classes, data.imbalance_threshold)
+    kept_files, _ = filter_slices(
+        data.output_root,
+        data.min_classes,
+        data.imbalance_threshold,
+        data.max_slices_per_sequence,
+    )
     _, val_files, _ = split_train_val(data.data_root, kept_files)
 
     model = tf.keras.models.load_model(
@@ -30,7 +41,14 @@ def main() -> None:
         },
         compile=False,
     )
-    results = evaluate_classwise(model, val_files, data.output_root, model_params.num_classes, limit=args.limit)
+    results = evaluate_classwise(
+        model,
+        val_files,
+        data.output_root,
+        model_params.num_classes,
+        limit=args.limit,
+        nsd_tolerance=args.nsd_tolerance,
+    )
     metrics_path = data.output_root / "validation_metrics.csv"
     results.to_csv(metrics_path, index=False)
     print(results)

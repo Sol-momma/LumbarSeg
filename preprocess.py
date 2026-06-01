@@ -1,3 +1,5 @@
+# SPIDERデータセットの3D MRIデータを2D画像に変換する
+
 from argparse import ArgumentParser
 
 from arguments import add_data_args, get_param_groups
@@ -17,7 +19,12 @@ def main() -> None:
         sequences=data.sequences,
         force=data.force_reprocess,
     )
-    kept_files, filter_stats = filter_slices(data.output_root, data.min_classes, data.imbalance_threshold)
+    kept_files, filter_stats = filter_slices(
+        data.output_root,
+        data.min_classes,
+        data.imbalance_threshold,
+        data.max_slices_per_sequence,
+    )
 
     print("Extraction stats:", stats)
     print("Filtering stats:", filter_stats)

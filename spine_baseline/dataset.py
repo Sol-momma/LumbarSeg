@@ -19,6 +19,13 @@ def load_sample(filename: str, output_root: Path, num_classes: int) -> tuple[np.
     return image, mask_onehot
 
 
+def load_slice_spacing(filename: str, output_root: Path) -> np.ndarray:
+    with np.load(output_root / "images" / filename) as sample:
+        if "spacing" in sample:
+            return sample["spacing"].astype(np.float32)
+    return np.array([1.0, 1.0], dtype=np.float32)
+
+
 def create_dataset(file_list: list[str], output_root: Path, target_height: int, target_width: int,
                    num_classes: int, batch_size: int, shuffle: bool) -> tf.data.Dataset:
     if not file_list:

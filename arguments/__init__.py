@@ -12,6 +12,7 @@ class DataParams:
     target_width: int
     min_classes: int
     imbalance_threshold: float
+    max_slices_per_sequence: int | None
     force_reprocess: bool
 
 
@@ -19,7 +20,7 @@ class DataParams:
 class ModelParams:
     input_channels: int
     num_classes: int
-    dropout_rate: float
+    dropout_rate: float | None
     leaky_relu_alpha: float
 
 
@@ -58,6 +59,12 @@ def add_data_args(parser: ArgumentParser) -> None:
     group.add_argument("--target_width", type=int, default=640)
     group.add_argument("--min_classes", type=int, default=4)
     group.add_argument("--imbalance_threshold", type=float, default=0.55)
+    group.add_argument(
+        "--max_slices_per_sequence",
+        type=int,
+        default=1000,
+        help="Maximum kept slices per MRI sequence after filtering. Use 0 to disable the paper's 1000-slice cap.",
+    )
     group.add_argument("--force_reprocess", action="store_true")
 
 
@@ -65,7 +72,12 @@ def add_model_args(parser: ArgumentParser) -> None:
     group = parser.add_argument_group("Model Parameters")
     group.add_argument("--input_channels", type=int, default=1)
     group.add_argument("--num_classes", type=int, default=4)
-    group.add_argument("--dropout_rate", type=float, default=0.5)
+    group.add_argument(
+        "--dropout_rate",
+        type=float,
+        default=None,
+        help="Optional global dropout override. Omit to use the paper schedule: 0.1/0.2/0.3 by depth.",
+    )
     group.add_argument("--leaky_relu_alpha", type=float, default=0.1)
 
 
@@ -89,6 +101,7 @@ def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, Optimiza
         target_width=args.target_width,
         min_classes=args.min_classes,
         imbalance_threshold=args.imbalance_threshold,
+        max_slices_per_sequence=args.max_slices_per_sequence if args.max_slices_per_sequence > 0 else None,
         force_reprocess=args.force_reprocess,
     )
     model = ModelParams(

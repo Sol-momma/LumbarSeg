@@ -37,7 +37,7 @@ Output (512x640x4)  ← 4クラスのsoftmax
 
 **問題**: 通常のReLUでは負の入力に対してゼロを返すため、一部のニューロンが永久に不活性化する ("dying ReLU" 問題)
 
-**解決**: Leaky ReLU を使用し、負の領域でも小さな勾配 (0.1) を維持
+**解決**: 論文のカスタムUpsample BlockでLeaky ReLUを使用し、負の領域でも小さな勾配 (0.1) を維持
 
 ```
 LeakyReLU(x) = x       if x > 0
@@ -73,33 +73,37 @@ Conv2DTranspose
 ### 5. Batch Normalization + Dropout
 
 - Batch Normalization: 各層の出力を正規化し学習を安定化
-- Dropout: 過学習防止 (具体的なrate値は論文に未記載)
+- Dropout: 過学習防止
+- 論文Figure 7周辺の層説明では、浅い層から順に `0.1`, `0.2`, `0.3` を使用
 
-## Encoder (Contractive Path) の推定構成
+## Encoder (Contractive Path) の構成
 
-論文のFigure 7に基づく推定 (具体的なチャネル数は論文図から読み取り):
+論文のFigure 7とソース中の層説明に基づく構成:
 
 ```
-Level 1: Conv(64) → Conv(64) → MaxPool
-Level 2: Conv(128) → Conv(128) → MaxPool
-Level 3: Conv(256) → Conv(256) → MaxPool
-Level 4: Conv(512) → Conv(512) → MaxPool
+Level 1: Conv(16)  → BN → Dropout(0.1) → Conv(16)  → MaxPool
+Level 2: Conv(32)  → BN → Dropout(0.1) → Conv(32)  → MaxPool
+Level 3: Conv(64)  → BN → Dropout(0.2) → Conv(64)  → MaxPool
+Level 4: Conv(128) → BN → Dropout(0.2) → Conv(128) → MaxPool
+Level 5: Conv(256) → BN → Dropout(0.3) → Conv(256)
 ```
 
 ## Bottleneck
 
 ```
-Conv(512) → Conv(512)   ← 追加の512ch層
+Conv(512) → BN → Dropout(0.3) → Conv(512)
 ```
 
-## Decoder (Expansive Path) の推定構成
+## Decoder (Expansive Path) の構成
 
 ```
-Level 4: Upsample(512) + Skip → Conv(256) → Conv(256)
-Level 3: Upsample(256) + Skip → Conv(128) → Conv(128)
-Level 2: Upsample(128) + Skip → Conv(64) → Conv(64)
-Level 1: Upsample(64) + Skip → Conv(64) → Conv(64)
+Level 4: Conv2DTranspose(256) + Skip(c4) → Conv(256) → BN → Dropout(0.2) → Conv(256)
+Level 3: Conv2DTranspose(128) + Skip(c3) → Conv(128) → BN → Dropout(0.2) → Conv(128)
+Level 2: Conv2DTranspose(64)  + Skip(c2) → Conv(64)  → BN → Dropout(0.1) → Conv(64)
+Level 1: Conv2DTranspose(32)  + Skip(c1) → Conv(32)  → BN → Dropout(0.1) → Conv(32)
 ```
+
+`Conv2DTranspose` ブロックには `BatchNormalization` と `LeakyReLU(alpha=0.1)` を入れる。
 
 ## 出力層
 
@@ -155,8 +159,8 @@ L_combined = α * L_focal + (1 - α) * L_dice
 | バッチサイズ        | 8                        |
 | Early Stopping      | validation Mean IoU 基準 |
 | Model Checkpointing | validation Mean IoU 基準 |
-| Optimizer           | 未記載 (Adam が一般的)   |
-| 学習率              | 未記載                   |
+| Optimizer           | 論文未記載。実装ではAdam |
+| 学習率              | 論文未記載。実装では1e-4 |
 | 入力サイズ          | 512 x 640 (2D PNG)       |
 | 出力クラス数        | 4                        |
 
