@@ -157,7 +157,7 @@ python evaluate.py --model_path /path/to/best_model.keras --limit 100
 | ---- | ------ | ---- |
 | `--target_height` / `--target_width` | `512` / `640` | 論文の2D入力サイズ |
 | `--num_classes` | `4` | 背景・椎体・脊柱管・椎間板 |
-| `--imbalance_threshold` | `0.55` | 画像内の支配クラス割合の除外閾値 |
+| `--imbalance_threshold` | `0.55` | 前景クラス内の支配クラス割合の除外閾値 |
 | `--max_slices_per_sequence` | `1000` | 論文の各シーケンス1000枚に合わせる上限。`0`で無効化 |
 | `--focal_weight` | `0.6` | Combined Loss内のFocal重み |
 | `--focal_gamma` | `4.0` | Focal Lossのgamma |

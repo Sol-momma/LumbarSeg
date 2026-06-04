@@ -94,22 +94,22 @@ SPIDERマスクの実際のラベル値:
 
 ### Step 2: クラス不均衡の対処
 
-**クラス重み計算:**
+**前景クラス重み計算:**
 
 ```
-Class Weight = (特定クラスのピクセル数) / (画像の総ピクセル数)
+Foreground Class Weight = (特定の前景クラスのピクセル数) / (全前景ピクセル数)
 ```
 
 **実装上のフィルタ判定値:**
 
 ```
-Class Weight = (各クラスのピクセル数) / (画像の総ピクセル数)
-Dominant Class Fraction = max(Class Weight)
+Foreground Class Weight = (各前景クラスのピクセル数) / (全前景ピクセル数)
+Dominant Foreground Class Fraction = max(Foreground Class Weight)
 ```
 
-論文本文には `Highest Class Weight / Lowest Class Weight` と書かれているが、同時に「55%を超える画像を除外」と説明されている。比率なら通常1.0以上になるため、実装では論文の表と説明に最も合う運用解釈として、画像内の最大クラス重みが閾値を超えるスライスを除外する。
+論文本文には `Highest Class Weight / Lowest Class Weight` と書かれているが、同時に「55%を超える画像を除外」と説明されている。比率なら通常1.0以上になるため、実装では論文の表と説明に最も合う運用解釈として、背景を除いた前景クラス内の最大クラス重みが閾値を超えるスライスを除外する。
 
-- 最大クラス重みが55%を超える画像を除外
+- 前景内の最大クラス重みが55%を超える画像を除外
 - 経験的に決定された閾値
 
 ### フィルタリング前後の不均衡比率

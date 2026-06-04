@@ -81,7 +81,10 @@ drive.mount("/content/drive")
 - [ ] `outputs/t2_space_baseline/masks/` に `.npz` ファイルが作成される
 - [ ] `filtered_files.txt` が作成される
 - [ ] `filtered_slice_stats.csv` が作成される
+- [ ] `Filtered files` が0ではない
 - [ ] エラー件数が多すぎない
+
+`Filtered files: 0` になった場合は、古いフィルタ実装を使っている可能性がある。`git pull origin main` で最新版に更新してから、同じ前処理コマンドを再実行する。抽出済みファイルがある場合、通常はMHA抽出をスキップしてフィルタだけ再実行される。
 
 ### 5. 1 epochのスモークテスト
 

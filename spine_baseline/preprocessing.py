@@ -196,8 +196,8 @@ def filter_slices(
             removed_class_count += 1
             continue
 
-        max_fraction = dominant_class_fraction(mask)
-        if max_fraction > imbalance_threshold:
+        max_foreground_fraction = dominant_foreground_fraction(mask)
+        if max_foreground_fraction > imbalance_threshold:
             removed_imbalance += 1
             continue
 
@@ -207,7 +207,8 @@ def filter_slices(
         eligible_rows.append({
             "file": mask_file.name,
             "sequence": sequence,
-            "max_class_fraction": max_fraction,
+            "max_foreground_class_fraction": max_foreground_fraction,
+            "max_class_fraction": dominant_class_fraction(mask),
             "background_fraction": fractions.get(0, 0.0),
             "vertebrae_fraction": fractions.get(1, 0.0),
             "canal_fraction": fractions.get(2, 0.0),
@@ -245,6 +246,7 @@ def filter_slices(
         "before_filtering": len(list(mask_dir.glob("*.npz"))),
         "removed_class_count": removed_class_count,
         "removed_imbalance": removed_imbalance,
+        "imbalance_basis": "foreground_classes_only",
         "removed_sequence_cap": removed_sequence_cap,
         "kept": len(kept),
         "kept_by_sequence": kept_by_sequence,

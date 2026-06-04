@@ -270,7 +270,7 @@ python evaluate.py \
 | `--target_width` | `640` | Input slice width |
 | `--num_classes` | `4` | Segmentation classes |
 | `--sequences` | `None` | Optional filter: `T1`, `T2`, `T2_SPACE` |
-| `--imbalance_threshold` | `0.55` | Dominant class-fraction filter |
+| `--imbalance_threshold` | `0.55` | Dominant foreground class-fraction filter |
 | `--max_slices_per_sequence` | `1000` | Paper-aligned kept-slice cap per sequence; use `0` to disable |
 | `--batch_size` | `8` | Training batch size |
 | `--epochs` | `100` | Maximum training epochs |
