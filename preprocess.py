@@ -2,14 +2,14 @@
 
 from argparse import ArgumentParser
 
-from arguments import add_data_args, get_param_groups
+from arguments import add_data_args, get_data_params
 from spine_baseline.preprocessing import extract_slices, filter_slices
 
 
 def main() -> None:
     parser = ArgumentParser(description="Preprocess SPIDER MHA volumes for the baseline model.")
     add_data_args(parser)
-    data, _, _ = get_param_groups(parser.parse_args())
+    data = get_data_params(parser.parse_args())
 
     stats = extract_slices(
         data_root=data.data_root,

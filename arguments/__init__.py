@@ -92,8 +92,8 @@ def add_optimization_args(parser: ArgumentParser) -> None:
     group.add_argument("--seed", type=int, default=42)
 
 
-def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, OptimizationParams]:
-    data = DataParams(
+def get_data_params(args: Namespace) -> DataParams:
+    return DataParams(
         data_root=args.data_root,
         output_root=args.output_root,
         sequences=args.sequences,
@@ -104,6 +104,10 @@ def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, Optimiza
         max_slices_per_sequence=args.max_slices_per_sequence if args.max_slices_per_sequence > 0 else None,
         force_reprocess=args.force_reprocess,
     )
+
+
+def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, OptimizationParams]:
+    data = get_data_params(args)
     model = ModelParams(
         input_channels=args.input_channels,
         num_classes=args.num_classes,
