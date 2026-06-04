@@ -13,11 +13,12 @@ This directory contains **metadata only** — no MRI volumes are stored in the r
 
 Download `.mha` files from Zenodo and point `--data_root` to:
 
-```text
-DataSet/
-├── images/          # e.g. 100_t2_space.mha
-├── masks/           # matching masks
-└── SPIDER Lumbar Spine Segmentation Overview.csv
+```mermaid
+flowchart TB
+  DR["DataSet/"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+  DR --> CSV["SPIDER Lumbar Spine<br/>Segmentation Overview.csv"]
 ```
 
 - Dataset: [SPIDER on Zenodo](https://doi.org/10.5281/zenodo.10159290)  

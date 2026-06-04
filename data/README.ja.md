@@ -13,11 +13,12 @@
 
 実際の `.mha` は別途 Zenodo から取得し、次の構成で `--data_root` に指定します。
 
-```text
-DataSet/
-├── images/          # 例: 100_t2_space.mha
-├── masks/           # 対応するマスク
-└── SPIDER Lumbar Spine Segmentation Overview.csv
+```mermaid
+flowchart TB
+  DR["DataSet/"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+  DR --> CSV["SPIDER Lumbar Spine<br/>Segmentation Overview.csv"]
 ```
 
 - データセット: [SPIDER on Zenodo](https://doi.org/10.5281/zenodo.10159290)  

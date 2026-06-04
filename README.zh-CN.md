@@ -14,10 +14,34 @@
 
 ## 研究目标
 
-1. **阶段 1**：用与论文相同的前处理、模型和损失，在 T2 SPACE 上复现 Dice ≈ 0.97  
-2. **阶段 2**：复现成功后，通过架构、增强和损失改进超越论文精度
+```mermaid
+flowchart LR
+  S1["阶段 1<br/>复现论文基线"] --> S2["阶段 2<br/>超越论文精度"]
+  S1 --> M1["Dice ≈ 0.97<br/>T2 SPACE"]
+  S2 --> M2["架构 / 增强 / 损失"]
+```
 
 ### 分割类别（4 类）
+
+```mermaid
+flowchart LR
+  subgraph spider["SPIDER 原始标签"]
+    R0["0"]
+    R1["1–99"]
+    R2["100"]
+    R3["200+"]
+  end
+  subgraph four["4 类"]
+    C0["0 背景"]
+    C1["1 椎体"]
+    C2["2 椎管"]
+    C3["3 椎间盘"]
+  end
+  R0 --> C0
+  R1 --> C1
+  R2 --> C2
+  R3 --> C3
+```
 
 | ID | 结构 | SPIDER 原始标签 |
 | ---: | --- | --- |
@@ -86,9 +110,16 @@ flowchart TD
 
 ### 过滤条件（与论文一致）
 
-- 剔除掩膜中**少于 4 类**的切片  
-- 剔除前景类最大占比 **超过 55%** 的切片（`--imbalance_threshold 0.55`）  
-- 每个序列最多保留 **1000 张**（`--max_slices_per_sequence`，设为 `0` 表示不限制）
+```mermaid
+flowchart TD
+  SL["候选切片"] --> Q1{"掩膜含<br/>4 个类别?"}
+  Q1 -->|否| X1["丢弃"]
+  Q1 -->|是| Q2{"前景最大占比<br/>≤ 55%?"}
+  Q2 -->|否| X2["丢弃"]
+  Q2 -->|是| Q3{"低于序列上限<br/>1000 张?"}
+  Q3 -->|否| X3["丢弃或抽样"]
+  Q3 -->|是| OK["保留用于训练"]
+```
 
 ---
 
@@ -96,51 +127,76 @@ flowchart TD
 
 ```mermaid
 flowchart TB
-  IN["输入 512×640×1"] --> ENC["Encoder<br/>16→32→64→128→256 ch"]
-  ENC --> BOT["Bottleneck 512 ch"]
-  BOT --> DEC["Decoder + Skip<br/>Custom Upsample Block"]
-  DEC --> OUT["输出 512×640×4 softmax"]
+  IN["输入 512×640×1"] --> E1["Encoder L1–L2<br/>16–32 ch, DO 0.1"]
+  E1 --> E2["Encoder L3–L4<br/>64–128 ch, DO 0.2"]
+  E2 --> E3["Encoder L5<br/>256 ch, DO 0.3"]
+  E3 --> BOT["Bottleneck<br/>512 ch"]
+  BOT --> D1["Decoder + skip<br/>Custom Upsample Block"]
+  D1 --> OUT["输出 512×640×4<br/>softmax"]
 
-  subgraph loss["Combined Loss"]
-    L1["Focal Loss γ=4.0 × 0.6"]
-    L2["Dice Loss × 0.4"]
+  OUT --> LOSS["Combined Loss"]
+  LOSS --> F["0.6 × Focal γ=4"]
+  LOSS --> D["0.4 × Dice"]
+
+  subgraph train_cfg["训练配置"]
+    A["Leaky ReLU α=0.1"]
+    G["Glorot 初始化"]
+    O["Adam lr=1e-4, batch=8, ≤100 ep"]
   end
-  OUT -.-> loss
 ```
-
-- 激活函数：Leaky ReLU（α=0.1）  
-- 初始化：Glorot uniform  
-- Dropout：论文 schedule（0.1 / 0.2 / 0.3）  
-- 优化：Adam，`lr=1e-4`，batch_size=8，最多 100 epoch
 
 ---
 
 ## 仓库结构
 
-```text
-LumbarSeg/
-├── preprocess.py          # 仅前处理
-├── train.py               # 前处理 + 训练
-├── evaluate.py            # 验证集评估
-├── arguments/             # CLI 参数（数据 / 模型 / 优化）
-├── spine_baseline/        # 前处理、数据集、模型、损失、指标
-├── data/                  # SPIDER 元数据（不含 MRI 体数据）
-├── requirements-baseline.txt
-├── flake.nix              # 可选：固定开发环境版本
-└── src/                   # 可选：Astro 实验展示页
-```
+```mermaid
+flowchart TB
+  ROOT["LumbarSeg/"]
 
-| 模块 | 作用 |
-| --- | --- |
-| `spine_baseline/preprocessing.py` | 读取 MHA、矢状提取、缩放、标签映射、过滤 |
-| `spine_baseline/model.py` | Modified U-Net |
-| `spine_baseline/losses.py` | Combined Loss |
-| `spine_baseline/metrics.py` | Dice、Mean IoU 等 |
-| `spine_baseline/dataset.py` | `tf.data` 流水线 |
+  ROOT --> CLI["CLI 入口"]
+  CLI --> PRE["preprocess.py"]
+  CLI --> TRN["train.py"]
+  CLI --> EVA["evaluate.py"]
+
+  ROOT --> ARG["arguments/"]
+  ROOT --> PKG["spine_baseline/"]
+  PKG --> PP["preprocessing.py"]
+  PKG --> DS["dataset.py"]
+  PKG --> MD["model.py"]
+  PKG --> LS["losses.py"]
+  PKG --> MT["metrics.py"]
+
+  ROOT --> DATA["data/ 元数据"]
+  ROOT --> REQ["requirements-baseline.txt"]
+  ROOT --> WEB["src/ Astro 可选"]
+
+  PRE --> PP
+  TRN --> PP
+  TRN --> DS
+  TRN --> MD
+  TRN --> LS
+  TRN --> MT
+  EVA --> PP
+  EVA --> DS
+  EVA --> MT
+```
 
 ---
 
 ## 快速开始
+
+```mermaid
+flowchart TD
+  A["克隆 + pip install"] --> B["将 SPIDER 放入 data_root"]
+  B --> C["preprocess.py"]
+  C --> D["train.py 1 epoch 冒烟测试"]
+  D --> E["train.py 正式训练"]
+  E --> F["evaluate.py"]
+  F --> G{"Dice ≈ 0.97?"}
+  G -->|否| H["检查标签 / 过滤 / GPU"]
+  G -->|是| I["阶段 2 改进"]
+  H --> C
+```
 
 ### 1. 克隆与安装
 
@@ -158,11 +214,12 @@ pip install -r requirements-baseline.txt
 
 从 [Zenodo](https://doi.org/10.5281/zenodo.10159290) 获取 SPIDER，并按如下组织（详见 [data/README.md](data/README.md)）：
 
-```text
-/path/to/SPIDER/DataSet/
-├── images/
-├── masks/
-└── SPIDER Lumbar Spine Segmentation Overview.csv
+```mermaid
+flowchart TB
+  DR["--data_root<br/>SPIDER/DataSet/"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+  DR --> CSV["SPIDER Lumbar Spine<br/>Segmentation Overview.csv"]
 ```
 
 ### 3. 前处理
@@ -200,15 +257,15 @@ python train.py \
 
 输出示例：
 
-```text
-outputs/t2_space_baseline/
-├── images/ masks/
-├── filtered_files.txt
-├── filtered_slice_stats.csv
-└── checkpoints/
-    ├── best_model.keras
-    ├── final_model.keras
-    └── training_log.csv
+```mermaid
+flowchart TB
+  OUT["--output_root<br/>outputs/t2_space_baseline/"]
+  OUT --> PNG["images/ + masks/"]
+  OUT --> FLT["filtered_files.txt<br/>filtered_slice_stats.csv"]
+  OUT --> CKPT["checkpoints/"]
+  CKPT --> BEST["best_model.keras"]
+  CKPT --> FINAL["final_model.keras"]
+  CKPT --> LOG["training_log.csv"]
 ```
 
 ### 6. 评估
@@ -223,6 +280,18 @@ python evaluate.py \
 ---
 
 ## Google Colab（建议使用 GPU）
+
+```mermaid
+flowchart TD
+  C1["挂载 Google Drive"] --> C2["克隆 LumbarSeg + pip"]
+  C2 --> C3{"可见 GPU?"}
+  C3 -->|否| C4["运行时 → GPU"]
+  C4 --> C3
+  C3 -->|是| C5["preprocess.py"]
+  C5 --> C6["train.py 1 epoch"]
+  C6 --> C7["evaluate.py"]
+  C7 --> C8["train.py 100 epoch"]
+```
 
 ```python
 from google.colab import drive
@@ -266,12 +335,18 @@ print(tf.config.list_physical_devices("GPU"))  # 若为 []，请将运行时切�
 
 ## 进度（截至 2026 年 6 月）
 
-- [x] 基线 CLI（前处理、训练、评估）
-- [x] Colab 冒烟测试：前处理 → 1 epoch 训练 → 评估
-- [ ] 在 Colab **GPU** 上完成正式训练（100 epoch）
-- [ ] 与论文 Dice 的定量对比
-- [ ] 预测 mask 与 MRI 叠加可视化
-- [ ] 扩展至 T1 / T2 及阶段 2 改进
+```mermaid
+flowchart LR
+  P1["基线 CLI"]:::done
+  P2["Colab 冒烟测试"]:::done
+  P3["GPU 正式训练"]:::todo
+  P4["与论文 Dice 对比"]:::todo
+  P5["掩膜叠加可视化"]:::todo
+  P6["T1/T2 + 阶段 2"]:::todo
+  P1 --> P2 --> P3 --> P4 --> P5 --> P6
+  classDef done fill:#d4edda,stroke:#28a745,color:#155724
+  classDef todo fill:#fff3cd,stroke:#ffc107,color:#856404
+```
 
 ---
 

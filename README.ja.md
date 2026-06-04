@@ -14,10 +14,34 @@
 
 ## 研究の目的
 
-1. **Stage 1**: 論文と同じ前処理・モデル・損失で Dice ≈ 0.97（T2 SPACE）を再現する  
-2. **Stage 2**: 再現後にアーキテクチャ・拡張・損失の改良で精度を上回る
+```mermaid
+flowchart LR
+  S1["Stage 1<br/>論文ベースライン再現"] --> S2["Stage 2<br/>論文を上回る改良"]
+  S1 --> M1["Dice ≈ 0.97<br/>T2 SPACE"]
+  S2 --> M2["アーキテクチャ・拡張・損失"]
+```
 
 ### セグメンテーションクラス（4クラス）
+
+```mermaid
+flowchart LR
+  subgraph spider["SPIDER 元ラベル"]
+    R0["0"]
+    R1["1–99"]
+    R2["100"]
+    R3["200+"]
+  end
+  subgraph four["4クラス"]
+    C0["0 Background"]
+    C1["1 椎体"]
+    C2["2 脊柱管"]
+    C3["3 椎間板"]
+  end
+  R0 --> C0
+  R1 --> C1
+  R2 --> C2
+  R3 --> C3
+```
 
 | ID | 構造 | SPIDER 元ラベル |
 | ---: | --- | --- |
@@ -86,9 +110,16 @@ flowchart TD
 
 ### フィルタ条件（論文準拠）
 
-- マスクに **4クラス未満** のスライスを除外  
-- 前景クラスの最大占有率が **55%超** のスライスを除外（`--imbalance_threshold 0.55`）  
-- シーケンスごとに保持上限 **1000枚**（`--max_slices_per_sequence`、0 で無制限）
+```mermaid
+flowchart TD
+  SL["候補スライス"] --> Q1{"マスクに<br/>4クラスある?"}
+  Q1 -->|いいえ| X1["除外"]
+  Q1 -->|はい| Q2{"前景最大占有率<br/>≤ 55%?"}
+  Q2 -->|いいえ| X2["除外"]
+  Q2 -->|はい| Q3{"シーケンス上限<br/>1000枚以内?"}
+  Q3 -->|いいえ| X3["除外または間引き"]
+  Q3 -->|はい| OK["学習に採用"]
+```
 
 ---
 
@@ -96,51 +127,76 @@ flowchart TD
 
 ```mermaid
 flowchart TB
-  IN["入力 512×640×1"] --> ENC["Encoder<br/>16→32→64→128→256 ch"]
-  ENC --> BOT["Bottleneck 512 ch"]
-  BOT --> DEC["Decoder + Skip<br/>Custom Upsample Block"]
-  DEC --> OUT["出力 512×640×4 softmax"]
+  IN["入力 512×640×1"] --> E1["Encoder L1–L2<br/>16–32 ch, DO 0.1"]
+  E1 --> E2["Encoder L3–L4<br/>64–128 ch, DO 0.2"]
+  E2 --> E3["Encoder L5<br/>256 ch, DO 0.3"]
+  E3 --> BOT["Bottleneck<br/>512 ch"]
+  BOT --> D1["Decoder + skip<br/>Custom Upsample Block"]
+  D1 --> OUT["出力 512×640×4<br/>softmax"]
 
-  subgraph loss["Combined Loss"]
-    L1["Focal Loss γ=4.0 × 0.6"]
-    L2["Dice Loss × 0.4"]
+  OUT --> LOSS["Combined Loss"]
+  LOSS --> F["0.6 × Focal γ=4"]
+  LOSS --> D["0.4 × Dice"]
+
+  subgraph train_cfg["学習設定"]
+    A["Leaky ReLU α=0.1"]
+    G["Glorot 初期化"]
+    O["Adam lr=1e-4, batch=8, ≤100 ep"]
   end
-  OUT -.-> loss
 ```
-
-- 活性化: Leaky ReLU（α=0.1）  
-- 初期化: Glorot uniform  
-- Dropout: 論文スケジュール（0.1 / 0.2 / 0.3）  
-- 最適化: Adam、`lr=1e-4`、batch_size=8、最大100 epoch
 
 ---
 
 ## リポジトリ構成
 
-```text
-LumbarSeg/
-├── preprocess.py          # 前処理のみ
-├── train.py               # 前処理 + 学習
-├── evaluate.py            # 検証セット評価
-├── arguments/             # CLI 引数（データ・モデル・最適化）
-├── spine_baseline/        # 前処理・データセット・モデル・損失・指標
-├── data/                  # SPIDER メタデータ（画像本体は含まない）
-├── requirements-baseline.txt
-├── flake.nix              # 任意: 開発環境のバージョン固定
-└── src/                   # 任意: Astro 実験ページ
-```
+```mermaid
+flowchart TB
+  ROOT["LumbarSeg/"]
 
-| モジュール | 役割 |
-| --- | --- |
-| `spine_baseline/preprocessing.py` | MHA 読込、矢状抽出、リサイズ、ラベル変換、フィルタ |
-| `spine_baseline/model.py` | Modified U-Net |
-| `spine_baseline/losses.py` | Combined Loss |
-| `spine_baseline/metrics.py` | Dice, Mean IoU 等 |
-| `spine_baseline/dataset.py` | `tf.data` パイプライン |
+  ROOT --> CLI["CLI エントリポイント"]
+  CLI --> PRE["preprocess.py"]
+  CLI --> TRN["train.py"]
+  CLI --> EVA["evaluate.py"]
+
+  ROOT --> ARG["arguments/"]
+  ROOT --> PKG["spine_baseline/"]
+  PKG --> PP["preprocessing.py"]
+  PKG --> DS["dataset.py"]
+  PKG --> MD["model.py"]
+  PKG --> LS["losses.py"]
+  PKG --> MT["metrics.py"]
+
+  ROOT --> DATA["data/ メタデータ"]
+  ROOT --> REQ["requirements-baseline.txt"]
+  ROOT --> WEB["src/ Astro 任意"]
+
+  PRE --> PP
+  TRN --> PP
+  TRN --> DS
+  TRN --> MD
+  TRN --> LS
+  TRN --> MT
+  EVA --> PP
+  EVA --> DS
+  EVA --> MT
+```
 
 ---
 
 ## クイックスタート
+
+```mermaid
+flowchart TD
+  A["クローン + pip install"] --> B["SPIDER を data_root に配置"]
+  B --> C["preprocess.py"]
+  C --> D["train.py 1 epoch スモーク"]
+  D --> E["train.py 本学習"]
+  E --> F["evaluate.py"]
+  F --> G{"Dice ≈ 0.97?"}
+  G -->|いいえ| H["ラベル・フィルタ・GPU を確認"]
+  G -->|はい| I["Stage 2 改良"]
+  H --> C
+```
 
 ### 1. クローンと依存関係
 
@@ -158,11 +214,12 @@ Nix を使う場合: `nix develop` のあと、上と同様に `.venv` を作成
 
 [Zenodo](https://doi.org/10.5281/zenodo.10159290) から SPIDER を取得し、次の形にします（詳細は [data/README.md](data/README.md)）。
 
-```text
-/path/to/SPIDER/DataSet/
-├── images/
-├── masks/
-└── SPIDER Lumbar Spine Segmentation Overview.csv
+```mermaid
+flowchart TB
+  DR["--data_root<br/>SPIDER/DataSet/"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+  DR --> CSV["SPIDER Lumbar Spine<br/>Segmentation Overview.csv"]
 ```
 
 ### 3. 前処理
@@ -200,15 +257,15 @@ python train.py \
 
 出力例:
 
-```text
-outputs/t2_space_baseline/
-├── images/ masks/
-├── filtered_files.txt
-├── filtered_slice_stats.csv
-└── checkpoints/
-    ├── best_model.keras
-    ├── final_model.keras
-    └── training_log.csv
+```mermaid
+flowchart TB
+  OUT["--output_root<br/>outputs/t2_space_baseline/"]
+  OUT --> PNG["images/ + masks/"]
+  OUT --> FLT["filtered_files.txt<br/>filtered_slice_stats.csv"]
+  OUT --> CKPT["checkpoints/"]
+  CKPT --> BEST["best_model.keras"]
+  CKPT --> FINAL["final_model.keras"]
+  CKPT --> LOG["training_log.csv"]
 ```
 
 ### 6. 評価
@@ -223,6 +280,18 @@ python evaluate.py \
 ---
 
 ## Google Colab（GPU 推奨）
+
+```mermaid
+flowchart TD
+  C1["Google Drive マウント"] --> C2["LumbarSeg clone + pip"]
+  C2 --> C3{"GPU 表示される?"}
+  C3 -->|いいえ| C4["ランタイム → GPU"]
+  C4 --> C3
+  C3 -->|はい| C5["preprocess.py"]
+  C5 --> C6["train.py 1 epoch"]
+  C6 --> C7["evaluate.py"]
+  C7 --> C8["train.py 100 epoch 本学習"]
+```
 
 ```python
 from google.colab import drive
@@ -266,12 +335,18 @@ print(tf.config.list_physical_devices("GPU"))  # GPU が [] のときはラン�
 
 ## 進捗（2026年6月時点）
 
-- [x] ベースライン実装（前処理・学習・評価 CLI）
-- [x] Colab 上で前処理 → 1 epoch 学習 → 評価まで動作確認
-- [ ] Colab **GPU** での本学習（100 epoch）
-- [ ] 論文 Dice との定量比較
-- [ ] 予測マスクの MRI オーバーレイ可視化
-- [ ] T1 / T2 への拡張、改良モデル（Stage 2）
+```mermaid
+flowchart LR
+  P1["ベースライン CLI"]:::done
+  P2["Colab スモーク"]:::done
+  P3["GPU 本学習"]:::todo
+  P4["論文 Dice 比較"]:::todo
+  P5["マスク可視化"]:::todo
+  P6["T1/T2 + Stage 2"]:::todo
+  P1 --> P2 --> P3 --> P4 --> P5 --> P6
+  classDef done fill:#d4edda,stroke:#28a745,color:#155724
+  classDef todo fill:#fff3cd,stroke:#ffc107,color:#856404
+```
 
 ---
 

@@ -13,11 +13,12 @@
 
 需从 Zenodo 单独下载 `.mha`，并将 `--data_root` 指向：
 
-```text
-DataSet/
-├── images/          # 例: 100_t2_space.mha
-├── masks/           # 对应掩膜
-└── SPIDER Lumbar Spine Segmentation Overview.csv
+```mermaid
+flowchart TB
+  DR["DataSet/"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+  DR --> CSV["SPIDER Lumbar Spine<br/>Segmentation Overview.csv"]
 ```
 
 - 数据集: [SPIDER on Zenodo](https://doi.org/10.5281/zenodo.10159290)  

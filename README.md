@@ -14,10 +14,34 @@ Graduation research repository for reproducing **four-class lumbar MRI segmentat
 
 ## Research Goals
 
-1. **Stage 1**: Reproduce Dice ≈ 0.97 on T2 SPACE with the same preprocessing, model, and loss as the paper  
-2. **Stage 2**: Improve accuracy via architecture, augmentation, and loss refinements after reproduction
+```mermaid
+flowchart LR
+  S1["Stage 1<br/>Reproduce paper baseline"] --> S2["Stage 2<br/>Improve beyond paper"]
+  S1 --> M1["Dice ≈ 0.97<br/>T2 SPACE"]
+  S2 --> M2["Architecture / augmentation / loss"]
+```
 
 ### Segmentation Classes (4 classes)
+
+```mermaid
+flowchart LR
+  subgraph spider["SPIDER raw labels"]
+    R0["0"]
+    R1["1–99"]
+    R2["100"]
+    R3["200+"]
+  end
+  subgraph four["4 classes"]
+    C0["0 Background"]
+    C1["1 Vertebrae"]
+    C2["2 Spinal Canal"]
+    C3["3 IVDs"]
+  end
+  R0 --> C0
+  R1 --> C1
+  R2 --> C2
+  R3 --> C3
+```
 
 | ID | Structure | SPIDER source labels |
 | ---: | --- | --- |
@@ -86,9 +110,16 @@ flowchart TD
 
 ### Filtering Rules (paper-aligned)
 
-- Drop slices with **fewer than 4 classes** in the mask  
-- Drop slices where the dominant foreground class exceeds **55%** (`--imbalance_threshold 0.55`)  
-- Cap kept slices at **1000 per sequence** (`--max_slices_per_sequence`; use `0` for no cap)
+```mermaid
+flowchart TD
+  SL["Candidate slice"] --> Q1{"Mask has<br/>4 classes?"}
+  Q1 -->|No| X1["Discard"]
+  Q1 -->|Yes| Q2{"Max foreground<br/>share ≤ 55%?"}
+  Q2 -->|No| X2["Discard"]
+  Q2 -->|Yes| Q3{"Under per-sequence<br/>cap 1000?"}
+  Q3 -->|No| X3["Discard or subsample"]
+  Q3 -->|Yes| OK["Keep for training"]
+```
 
 ---
 
@@ -96,51 +127,76 @@ flowchart TD
 
 ```mermaid
 flowchart TB
-  IN["Input 512×640×1"] --> ENC["Encoder<br/>16→32→64→128→256 ch"]
-  ENC --> BOT["Bottleneck 512 ch"]
-  BOT --> DEC["Decoder + Skip<br/>Custom Upsample Block"]
-  DEC --> OUT["Output 512×640×4 softmax"]
+  IN["Input 512×640×1"] --> E1["Encoder L1–L2<br/>16–32 ch, DO 0.1"]
+  E1 --> E2["Encoder L3–L4<br/>64–128 ch, DO 0.2"]
+  E2 --> E3["Encoder L5<br/>256 ch, DO 0.3"]
+  E3 --> BOT["Bottleneck<br/>512 ch"]
+  BOT --> D1["Decoder + skip<br/>Custom Upsample Block"]
+  D1 --> OUT["Output 512×640×4<br/>softmax"]
 
-  subgraph loss["Combined Loss"]
-    L1["Focal Loss γ=4.0 × 0.6"]
-    L2["Dice Loss × 0.4"]
+  OUT --> LOSS["Combined Loss"]
+  LOSS --> F["0.6 × Focal γ=4"]
+  LOSS --> D["0.4 × Dice"]
+
+  subgraph train_cfg["Training config"]
+    A["Leaky ReLU α=0.1"]
+    G["Glorot init"]
+    O["Adam lr=1e-4, batch=8, ≤100 ep"]
   end
-  OUT -.-> loss
 ```
-
-- Activation: Leaky ReLU (α=0.1)  
-- Initialization: Glorot uniform  
-- Dropout: paper schedule (0.1 / 0.2 / 0.3)  
-- Optimizer: Adam, `lr=1e-4`, batch_size=8, up to 100 epochs
 
 ---
 
 ## Repository Layout
 
-```text
-LumbarSeg/
-├── preprocess.py          # preprocessing only
-├── train.py               # preprocess + train
-├── evaluate.py            # validation metrics
-├── arguments/             # CLI groups (data, model, optimization)
-├── spine_baseline/        # preprocessing, dataset, model, loss, metrics
-├── data/                  # SPIDER metadata (no MRI volumes in repo)
-├── requirements-baseline.txt
-├── flake.nix              # optional: pin dev toolchain
-└── src/                   # optional: Astro experiment site
-```
+```mermaid
+flowchart TB
+  ROOT["LumbarSeg/"]
 
-| Module | Role |
-| --- | --- |
-| `spine_baseline/preprocessing.py` | MHA I/O, sagittal extraction, resize, label map, filter |
-| `spine_baseline/model.py` | Modified U-Net |
-| `spine_baseline/losses.py` | Combined Loss |
-| `spine_baseline/metrics.py` | Dice, Mean IoU, etc. |
-| `spine_baseline/dataset.py` | `tf.data` pipeline |
+  ROOT --> CLI["CLI entrypoints"]
+  CLI --> PRE["preprocess.py"]
+  CLI --> TRN["train.py"]
+  CLI --> EVA["evaluate.py"]
+
+  ROOT --> ARG["arguments/"]
+  ROOT --> PKG["spine_baseline/"]
+  PKG --> PP["preprocessing.py"]
+  PKG --> DS["dataset.py"]
+  PKG --> MD["model.py"]
+  PKG --> LS["losses.py"]
+  PKG --> MT["metrics.py"]
+
+  ROOT --> DATA["data/ metadata"]
+  ROOT --> REQ["requirements-baseline.txt"]
+  ROOT --> WEB["src/ Astro site optional"]
+
+  PRE --> PP
+  TRN --> PP
+  TRN --> DS
+  TRN --> MD
+  TRN --> LS
+  TRN --> MT
+  EVA --> PP
+  EVA --> DS
+  EVA --> MT
+```
 
 ---
 
 ## Quick Start
+
+```mermaid
+flowchart TD
+  A["Clone + pip install"] --> B["Place SPIDER under data_root"]
+  B --> C["preprocess.py"]
+  C --> D["train.py 1 epoch smoke test"]
+  D --> E["train.py full training"]
+  E --> F["evaluate.py"]
+  F --> G{"Dice ≈ 0.97?"}
+  G -->|No| H["Debug labels / filter / GPU"]
+  G -->|Yes| I["Stage 2 improvements"]
+  H --> C
+```
 
 ### 1. Clone and install
 
@@ -158,11 +214,12 @@ With Nix: run `nix develop`, then create `.venv` as above.
 
 Download SPIDER from [Zenodo](https://doi.org/10.5281/zenodo.10159290) and arrange (see [data/README.md](data/README.md)):
 
-```text
-/path/to/SPIDER/DataSet/
-├── images/
-├── masks/
-└── SPIDER Lumbar Spine Segmentation Overview.csv
+```mermaid
+flowchart TB
+  DR["--data_root<br/>SPIDER/DataSet/"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+  DR --> CSV["SPIDER Lumbar Spine<br/>Segmentation Overview.csv"]
 ```
 
 ### 3. Preprocess
@@ -200,15 +257,15 @@ python train.py \
 
 Example outputs:
 
-```text
-outputs/t2_space_baseline/
-├── images/ masks/
-├── filtered_files.txt
-├── filtered_slice_stats.csv
-└── checkpoints/
-    ├── best_model.keras
-    ├── final_model.keras
-    └── training_log.csv
+```mermaid
+flowchart TB
+  OUT["--output_root<br/>outputs/t2_space_baseline/"]
+  OUT --> PNG["images/ + masks/"]
+  OUT --> FLT["filtered_files.txt<br/>filtered_slice_stats.csv"]
+  OUT --> CKPT["checkpoints/"]
+  CKPT --> BEST["best_model.keras"]
+  CKPT --> FINAL["final_model.keras"]
+  CKPT --> LOG["training_log.csv"]
 ```
 
 ### 6. Evaluate
@@ -223,6 +280,18 @@ python evaluate.py \
 ---
 
 ## Google Colab (GPU recommended)
+
+```mermaid
+flowchart TD
+  C1["Mount Google Drive"] --> C2["Clone LumbarSeg + pip install"]
+  C2 --> C3{"GPU visible?"}
+  C3 -->|No| C4["Runtime → GPU"]
+  C4 --> C3
+  C3 -->|Yes| C5["preprocess.py"]
+  C5 --> C6["train.py smoke 1 ep"]
+  C6 --> C7["evaluate.py"]
+  C7 --> C8["train.py 100 ep full run"]
+```
 
 ```python
 from google.colab import drive
@@ -266,12 +335,18 @@ print(tf.config.list_physical_devices("GPU"))  # if [], switch runtime to GPU
 
 ## Progress (as of June 2026)
 
-- [x] Baseline CLI (preprocess, train, evaluate)
-- [x] Colab smoke test: preprocess → 1-epoch train → evaluate
-- [ ] Full training on Colab **GPU** (100 epochs)
-- [ ] Quantitative comparison with paper Dice scores
-- [ ] Overlay visualization of predicted masks on MRI
-- [ ] T1 / T2 experiments and Stage 2 improvements
+```mermaid
+flowchart LR
+  P1["Baseline CLI"]:::done
+  P2["Colab smoke test"]:::done
+  P3["GPU full training"]:::todo
+  P4["Compare with paper Dice"]:::todo
+  P5["Mask overlay viz"]:::todo
+  P6["T1/T2 + Stage 2"]:::todo
+  P1 --> P2 --> P3 --> P4 --> P5 --> P6
+  classDef done fill:#d4edda,stroke:#28a745,color:#155724
+  classDef todo fill:#fff3cd,stroke:#ffc107,color:#856404
+```
 
 ---
 
