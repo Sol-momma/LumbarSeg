@@ -26,3 +26,11 @@ __pycache__/
 outputs/
 checkpoints/
 *.keras
+
+# Personal notes (kept locally, not published)
+docs/
+AGENTS.md
+CLAUDE.md
+
+# Local experiment notebooks (Colab commands are in README)
+*.ipynb

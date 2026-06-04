@@ -1,115 +1,32 @@
-<div align="center">
-  <h1>LumbarSeg</h1>
-  <h2>Four-Class Lumbar MRI Segmentation with a Paper-Aligned U-Net Baseline</h2>
+# LumbarSeg
 
-  [Project Page](https://sol-momma.github.io/LumbarSeg/) |
-  [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) |
-  [SPIDER Dataset](https://doi.org/10.5281/zenodo.10159290) |
-  [Japanese Notes](docs/readme_ja.md)
-</div>
+**Languages / 语言 / 言語:** **English** · [中文](README.zh-CN.md) · [日本語](README.ja.md)
+
+Graduation research repository for reproducing **four-class lumbar MRI segmentation** using the Ahmed et al. (2025) baseline (Modified U-Net + Combined Loss).
+
+| Link | |
+| --- | --- |
+| Target paper | [Ahmed et al., 2025](https://www.sciencedirect.com/science/article/pii/S2666827025000180) |
+| Dataset | [SPIDER (Zenodo)](https://doi.org/10.5281/zenodo.10159290) |
+| Experiment page (optional) | [GitHub Pages](https://sol-momma.github.io/LumbarSeg/) |
 
 ---
 
-## What Is LumbarSeg?
+## Research Goals
 
-LumbarSeg is a graduation research project for reproducing and extending the
-lumbar spine MRI segmentation method proposed by Ahmed et al. (2025).
+1. **Stage 1**: Reproduce Dice ≈ 0.97 on T2 SPACE with the same preprocessing, model, and loss as the paper  
+2. **Stage 2**: Improve accuracy via architecture, augmentation, and loss refinements after reproduction
 
-The baseline segments sagittal lumbar MRI slices into four pixel-wise classes:
+### Segmentation Classes (4 classes)
 
-| Class | Structure | Clinical role |
-| --- | --- | --- |
-| 0 | Background | Non-anatomical region |
-| 1 | Vertebrae | Bone structure assessment |
-| 2 | Spinal Canal | Stenosis-related anatomy |
-| 3 | Intervertebral Discs | Disc degeneration / herniation analysis |
+| ID | Structure | SPIDER source labels |
+| ---: | --- | --- |
+| 0 | Background | `0` |
+| 1 | Vertebrae | `1–99` |
+| 2 | Spinal Canal | `100` |
+| 3 | IVDs (intervertebral discs) | `200+` |
 
-The first goal is to reproduce the reported Dice score around **0.97**. The
-second goal is to improve the baseline through stronger architectures, losses,
-augmentation, and error analysis.
-
-## Why This Project Matters
-
-- **Paper-aligned baseline**: Modified U-Net with Leaky ReLU, Glorot
-  initialization, and Combined Loss.
-- **Real medical dataset**: SPIDER contains 218 patients and 447 MRI series from
-  multiple centers.
-- **Reproducible training entrypoints**: preprocessing, training, and evaluation
-  are available as root-level CLI scripts.
-- **Research page included**: the Astro site summarizes the paper, model,
-  metrics, and experiment workflow.
-- **Cost-conscious workflow**: small local/Colab smoke tests first; GPU training
-  only after the pipeline is verified.
-
-## Latest Updates
-
-#### [2026-05] FastGS-style repository cleanup
-
-- Added CLI entrypoints: `preprocess.py`, `train.py`, `evaluate.py`
-- Split baseline code into `spine_baseline/`
-- Added the interactive Astro experiment viewer
-- Renamed the research project identity to **LumbarSeg**
-- Moved the original Japanese README to [docs/readme_ja.md](docs/readme_ja.md)
-
-## Method Overview
-
-### Research Workflow
-
-```mermaid
-flowchart TD
-    A["Ahmed et al. (2025)<br/>baseline specification"] --> B["SPIDER dataset<br/>3D MHA volumes and masks"]
-    B --> C["Preprocessing<br/>extract sagittal 2D slices"]
-    C --> D["Label mapping<br/>background / vertebrae / canal / IVDs"]
-    D --> E["Slice filtering<br/>remove incomplete or highly imbalanced samples"]
-    E --> F["Modified U-Net baseline<br/>Leaky ReLU + Glorot init"]
-    F --> G["Combined Loss<br/>0.6 Focal + 0.4 Dice"]
-    G --> H["Training<br/>early stopping on validation Mean IoU"]
-    H --> I["Evaluation<br/>Dice, IoU, per-class analysis"]
-    I --> J{"Dice around 0.97<br/>reproduced?"}
-    J -- "No" --> K["Debug pipeline<br/>labels, filtering, split, augmentation"]
-    K --> C
-    J -- "Yes" --> L["Improve baseline<br/>architecture, loss, augmentation"]
-    L --> M["Compare against paper<br/>report gains and failures"]
-```
-
-### Data Pipeline
-
-```text
-SPIDER 3D MHA volumes
-  -> sagittal 2D slice extraction
-  -> 512 x 640 resize
-  -> SPIDER labels mapped to 4 classes
-  -> incomplete / highly imbalanced slices filtered
-  -> TensorFlow Dataset
-```
-
-### Label Mapping
-
-```text
-0       -> 0 Background
-1-99    -> 1 Vertebrae
-100     -> 2 Spinal Canal
-200+    -> 3 Intervertebral Discs
-```
-
-### Baseline Model
-
-- Modified U-Net
-- Custom upsample block with Leaky ReLU alpha = 0.1
-- Glorot / Xavier initialization
-- Paper Figure 7 channel schedule: 16 -> 32 -> 64 -> 128 -> 256 -> 512
-- Paper dropout schedule: 0.1 / 0.2 / 0.3 by depth
-- 4-channel softmax output
-
-### Loss
-
-```text
-Combined Loss = 0.6 * Focal Loss(gamma=4.0) + 0.4 * Dice Loss
-```
-
-## Target Results
-
-Reported T2 SPACE validation performance from Ahmed et al. (2025):
+### Target Metrics from the Paper (T2 SPACE, reference)
 
 | Structure | Dice | IoU |
 | --- | ---: | ---: |
@@ -117,119 +34,175 @@ Reported T2 SPACE validation performance from Ahmed et al. (2025):
 | Vertebrae | 0.9712 | 0.9461 |
 | Spinal Canal | 0.9671 | 0.9501 |
 
-## Hardware Notes
+---
 
-Local Mac execution is useful for code editing and small smoke tests. Full
-training should be run on a GPU environment.
+## Overall Pipeline
 
-Recommended low-cost workflow:
+```mermaid
+flowchart LR
+  subgraph input["Input"]
+    A["SPIDER 3D MHA<br/>images + masks"]
+  end
+  subgraph prep["Preprocess preprocess.py"]
+    B["Sagittal 2D extract<br/>512×640"]
+    C["Map labels to 4 classes"]
+    D["Slice filter<br/>drop incomplete / imbalanced"]
+  end
+  subgraph train["Train train.py"]
+    E["Modified U-Net"]
+    F["Combined Loss<br/>0.6×Focal + 0.4×Dice"]
+    G["Early stopping<br/>val Mean IoU"]
+  end
+  subgraph eval["Evaluate evaluate.py"]
+    H["Dice / IoU / F1, etc."]
+    I["validation_metrics.csv"]
+  end
+  A --> B --> C --> D --> E --> F --> G --> H --> I
+```
 
-1. Run `--epochs 1` smoke tests locally or on free Colab.
-2. Run short `--epochs 5` experiments on free Colab.
-3. Use Colab Pro or a cloud GPU only for full training runs.
+---
+
+## Data Flow (Detail)
+
+```mermaid
+flowchart TD
+  Z["Zenodo: SPIDER .mha"] --> DR["--data_root / DataSet"]
+  DR --> IMG["images/*.mha"]
+  DR --> MSK["masks/*.mha"]
+
+  IMG --> EX["extract_slices()"]
+  MSK --> EX
+  EX --> PNG["output_root/images/*.png<br/>output_root/masks/*.png"]
+
+  PNG --> FL["filter_slices()"]
+  FL --> FF["filtered_files.txt<br/>filtered_slice_stats.csv"]
+
+  FF --> DS["TensorFlow Dataset<br/>train / val split"]
+  DS --> UNET["build_modified_unet()"]
+  UNET --> CKPT["checkpoints/best_model.keras"]
+  CKPT --> EV["evaluate.py"]
+  EV --> CSV["validation_metrics.csv"]
+```
+
+### Filtering Rules (paper-aligned)
+
+- Drop slices with **fewer than 4 classes** in the mask  
+- Drop slices where the dominant foreground class exceeds **55%** (`--imbalance_threshold 0.55`)  
+- Cap kept slices at **1000 per sequence** (`--max_slices_per_sequence`; use `0` for no cap)
+
+---
+
+## Model and Loss
+
+```mermaid
+flowchart TB
+  IN["Input 512×640×1"] --> ENC["Encoder<br/>16→32→64→128→256 ch"]
+  ENC --> BOT["Bottleneck 512 ch"]
+  BOT --> DEC["Decoder + Skip<br/>Custom Upsample Block"]
+  DEC --> OUT["Output 512×640×4 softmax"]
+
+  subgraph loss["Combined Loss"]
+    L1["Focal Loss γ=4.0 × 0.6"]
+    L2["Dice Loss × 0.4"]
+  end
+  OUT -.-> loss
+```
+
+- Activation: Leaky ReLU (α=0.1)  
+- Initialization: Glorot uniform  
+- Dropout: paper schedule (0.1 / 0.2 / 0.3)  
+- Optimizer: Adam, `lr=1e-4`, batch_size=8, up to 100 epochs
+
+---
+
+## Repository Layout
+
+```text
+LumbarSeg/
+├── preprocess.py          # preprocessing only
+├── train.py               # preprocess + train
+├── evaluate.py            # validation metrics
+├── arguments/             # CLI groups (data, model, optimization)
+├── spine_baseline/        # preprocessing, dataset, model, loss, metrics
+├── data/                  # SPIDER metadata (no MRI volumes in repo)
+├── requirements-baseline.txt
+├── flake.nix              # optional: pin dev toolchain
+└── src/                   # optional: Astro experiment site
+```
+
+| Module | Role |
+| --- | --- |
+| `spine_baseline/preprocessing.py` | MHA I/O, sagittal extraction, resize, label map, filter |
+| `spine_baseline/model.py` | Modified U-Net |
+| `spine_baseline/losses.py` | Combined Loss |
+| `spine_baseline/metrics.py` | Dice, Mean IoU, etc. |
+| `spine_baseline/dataset.py` | `tf.data` pipeline |
+
+---
 
 ## Quick Start
 
-### Clone
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/Sol-momma/LumbarSeg.git
 cd LumbarSeg
-```
-
-### Environment
-
-Recommended for local development:
-
-```bash
-nix develop
-```
-
-Then create a Python virtual environment inside the Nix shell:
-
-```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements-baseline.txt
 ```
 
-See [docs/nix.md](docs/nix.md) for the full Nix workflow.
+With Nix: run `nix develop`, then create `.venv` as above.
 
-For Colab:
+### 2. Dataset layout
 
-```bash
-!git clone https://github.com/Sol-momma/LumbarSeg.git
-%cd LumbarSeg
-!pip install -r requirements-baseline.txt
-```
-
-### Dataset Organization
-
-The `--data_root` directory should contain:
+Download SPIDER from [Zenodo](https://doi.org/10.5281/zenodo.10159290) and arrange (see [data/README.md](data/README.md)):
 
 ```text
-DataSet/
+/path/to/SPIDER/DataSet/
 ├── images/
-│   ├── 100_t1.mha
-│   ├── 100_t2.mha
-│   └── ...
 ├── masks/
-│   ├── 100_t1.mha
-│   ├── 100_t2.mha
-│   └── ...
 └── SPIDER Lumbar Spine Segmentation Overview.csv
 ```
 
-The full MRI data is not stored in this repository.
-
-## Training & Evaluation
-
-### 1. Preprocess
+### 3. Preprocess
 
 ```bash
 python preprocess.py \
   --data_root /path/to/SPIDER/DataSet \
-  --output_root outputs/processed_baseline
-```
-
-For a cheaper first pass:
-
-```bash
-python preprocess.py \
-  --data_root /path/to/SPIDER/DataSet \
-  --output_root outputs/t2_space_test \
+  --output_root outputs/t2_space_baseline \
   --sequences T2_SPACE
 ```
 
-### 2. Smoke Test
+### 4. Smoke test (required)
 
-Always run a short test before a full experiment:
+Run **1 epoch** before full training to verify the pipeline:
 
 ```bash
 python train.py \
   --data_root /path/to/SPIDER/DataSet \
-  --output_root outputs/t2_space_test \
+  --output_root outputs/t2_space_baseline \
   --sequences T2_SPACE \
   --epochs 1 \
   --batch_size 2
 ```
 
-### 3. Baseline Training
+### 5. Full training
 
 ```bash
 python train.py \
   --data_root /path/to/SPIDER/DataSet \
-  --output_root outputs/processed_baseline \
+  --output_root outputs/t2_space_baseline \
+  --sequences T2_SPACE \
   --batch_size 8 \
   --epochs 100
 ```
 
-Outputs:
+Example outputs:
 
 ```text
-outputs/processed_baseline/
-├── images/
-├── masks/
+outputs/t2_space_baseline/
+├── images/ masks/
 ├── filtered_files.txt
 ├── filtered_slice_stats.csv
 └── checkpoints/
@@ -238,105 +211,86 @@ outputs/processed_baseline/
     └── training_log.csv
 ```
 
-### 4. Evaluation
+### 6. Evaluate
 
 ```bash
 python evaluate.py \
   --data_root /path/to/SPIDER/DataSet \
-  --output_root outputs/processed_baseline \
-  --model_path outputs/processed_baseline/checkpoints/best_model.keras
+  --output_root outputs/t2_space_baseline \
+  --model_path outputs/t2_space_baseline/checkpoints/best_model.keras
 ```
 
-Evaluation writes Dice, IoU, ASD, NSD, precision, recall, and F1 to
-`validation_metrics.csv`. Use `--nsd_tolerance` to set the NSD surface-distance
-tolerance.
+---
 
-Quick validation subset:
+## Google Colab (GPU recommended)
+
+```python
+from google.colab import drive
+drive.mount("/content/drive")
+```
 
 ```bash
-python evaluate.py \
-  --data_root /path/to/SPIDER/DataSet \
-  --output_root outputs/processed_baseline \
-  --model_path outputs/processed_baseline/checkpoints/best_model.keras \
-  --limit 100
+%cd /content
+!test -d LumbarSeg && (cd LumbarSeg && git pull) || git clone https://github.com/Sol-momma/LumbarSeg.git
+%cd /content/LumbarSeg
+!pip install -q -r requirements-baseline.txt
 ```
 
-<details>
-<summary><strong>Command Line Arguments</strong></summary>
+```python
+import tensorflow as tf
+print(tf.__version__)
+print(tf.config.list_physical_devices("GPU"))  # if [], switch runtime to GPU
+```
+
+```bash
+!python preprocess.py \
+  --data_root /content/drive/MyDrive/SPIDER/DataSet \
+  --output_root /content/drive/MyDrive/SPIDER/outputs/t2_space_baseline \
+  --sequences T2_SPACE
+
+!python train.py \
+  --data_root /content/drive/MyDrive/SPIDER/DataSet \
+  --output_root /content/drive/MyDrive/SPIDER/outputs/t2_space_baseline \
+  --sequences T2_SPACE \
+  --epochs 1 --batch_size 2
+
+!python evaluate.py \
+  --data_root /content/drive/MyDrive/SPIDER/DataSet \
+  --output_root /content/drive/MyDrive/SPIDER/outputs/t2_space_baseline \
+  --model_path /content/drive/MyDrive/SPIDER/outputs/t2_space_baseline/checkpoints/best_model.keras
+```
+
+> **Note:** Training on CPU is extremely slow. In Colab, use **Runtime → Change runtime type → GPU** before training.
+
+---
+
+## Progress (as of June 2026)
+
+- [x] Baseline CLI (preprocess, train, evaluate)
+- [x] Colab smoke test: preprocess → 1-epoch train → evaluate
+- [ ] Full training on Colab **GPU** (100 epochs)
+- [ ] Quantitative comparison with paper Dice scores
+- [ ] Overlay visualization of predicted masks on MRI
+- [ ] T1 / T2 experiments and Stage 2 improvements
+
+---
+
+## Key CLI Arguments
 
 | Argument | Default | Description |
 | --- | ---: | --- |
-| `--target_height` | `512` | Input slice height |
-| `--target_width` | `640` | Input slice width |
-| `--num_classes` | `4` | Segmentation classes |
-| `--sequences` | `None` | Optional filter: `T1`, `T2`, `T2_SPACE` |
-| `--imbalance_threshold` | `0.55` | Dominant foreground class-fraction filter |
-| `--max_slices_per_sequence` | `1000` | Paper-aligned kept-slice cap per sequence; use `0` to disable |
-| `--batch_size` | `8` | Training batch size |
-| `--epochs` | `100` | Maximum training epochs |
-| `--learning_rate` | `1e-4` | Adam learning rate |
-| `--focal_weight` | `0.6` | Focal term weight in Combined Loss |
-| `--focal_gamma` | `4.0` | Focal Loss gamma |
-| `--dropout_rate` | `None` | Optional global override; omitted means paper schedule |
-| `--patience` | `15` | Early stopping patience |
+| `--target_height` / `--target_width` | 512 / 640 | Input slice size |
+| `--sequences` | all | `T1`, `T2`, `T2_SPACE` (comma-separated) |
+| `--imbalance_threshold` | 0.55 | Max dominant foreground fraction |
+| `--max_slices_per_sequence` | 1000 | Cap per sequence (`0` = unlimited) |
+| `--batch_size` | 8 | Batch size |
+| `--epochs` | 100 | Max epochs |
+| `--focal_weight` / `--focal_gamma` | 0.6 / 4.0 | Combined Loss |
+| `--patience` | 15 | Early stopping patience |
 
-</details>
-
-## Website
-
-The research page is built with Astro.
-
-```bash
-nix develop
-npm install
-npm run dev
-```
-
-Local URLs:
-
-- `http://127.0.0.1:4321/LumbarSeg/`
-- `http://127.0.0.1:4321/LumbarSeg/notes/`
-- `http://127.0.0.1:4321/LumbarSeg/en/`
-
-Production build:
-
-```bash
-npm run build
-```
-
-## Repository Structure
-
-```text
-LumbarSeg/
-├── preprocess.py
-├── train.py
-├── evaluate.py
-├── arguments/
-├── spine_baseline/
-├── spine_segmentation.ipynb
-├── src/
-├── public/
-├── docs/
-├── data/
-└── requirements-baseline.txt
-```
-
-## Documentation
-
-- [Japanese README](docs/readme_ja.md)
-- [Paper overview](docs/overview.md)
-- [Nix development environment](docs/nix.md)
-- [Project goals](docs/project_goals.md)
-- [Preprocessing notes](docs/preprocessing.md)
-- [Architecture notes](docs/architecture.md)
-- [SPIDER dataset notes](docs/dataset_spider.md)
-- [Open questions](docs/open_questions.md)
-- [Baseline improvement proposals](docs/improvement_proposals.md)
+---
 
 ## References
 
-1. Ahmed, I. et al. "Pioneering Precision in Lumbar Spine MRI Segmentation with
-   Advanced Deep Learning and Data Enhancement." Machine Learning with
-   Applications, Vol. 20, 2025.
-2. van der Graaf, J.W. et al. "Lumbar spine segmentation in MR images: a dataset
-   and a public benchmark." Scientific Data, 11:264, 2024.
+1. Ahmed, I. et al. *Pioneering Precision in Lumbar Spine MRI Segmentation with Advanced Deep Learning and Data Enhancement.* Machine Learning with Applications, Vol. 20, 2025.  
+2. van der Graaf, J.W. et al. *Lumbar spine segmentation in MR images: a dataset and a public benchmark.* Scientific Data, 11:264, 2024.
