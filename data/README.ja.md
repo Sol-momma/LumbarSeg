@@ -1,6 +1,6 @@
 # SPIDER データセット参照ファイル
 
-**Languages / 语言 / 言語:** [English](README.md) · [中文](README.zh-CN.md) · **日本語**
+**Languages / 语言 / 言語:** [English](README.md) · [简体](README.zh-CN.md) · [繁體](README.zh-TW.md) · **日本語**
 
 このディレクトリには **MRI 画像本体は含まれません**。SPIDER 公式配布物から取得したメタデータのみを置いています。
 

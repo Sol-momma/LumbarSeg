@@ -1,6 +1,6 @@
 # SPIDER Dataset Reference Files
 
-**Languages / 语言 / 言語:** **English** · [中文](README.zh-CN.md) · [日本語](README.ja.md)
+**Languages / 语言 / 言語:** **English** · [简体](README.zh-CN.md) · [繁體](README.zh-TW.md) · [日本語](README.ja.md)
 
 This directory contains **metadata only** — no MRI volumes are stored in the repository.
 

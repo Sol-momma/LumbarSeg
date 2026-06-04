@@ -1,6 +1,6 @@
 # SPIDER 数据集参考文件
 
-**Languages / 语言 / 言語:** [English](README.md) · **中文** · [日本語](README.ja.md)
+**Languages / 语言 / 言語:** [English](README.md) · **简体** · [繁體](README.zh-TW.md) · [日本語](README.ja.md)
 
 本目录**不包含 MRI 体数据**，仅存放从 SPIDER 官方包获取的元数据。
 

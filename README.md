@@ -1,6 +1,6 @@
 # LumbarSeg
 
-**Languages / 语言 / 言語:** **English** · [中文](README.zh-CN.md) · [日本語](README.ja.md)
+**Languages / 语言 / 言語:** **English** · [简体](README.zh-CN.md) · [繁體](README.zh-TW.md) · [日本語](README.ja.md)
 
 Graduation research repository for reproducing **four-class lumbar MRI segmentation** using the Ahmed et al. (2025) baseline (Modified U-Net + Combined Loss).
 

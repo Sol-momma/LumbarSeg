@@ -1,6 +1,6 @@
 # LumbarSeg
 
-**Languages / 语言 / 言語:** [English](README.md) · [中文](README.zh-CN.md) · **日本語**
+**Languages / 语言 / 言語:** [English](README.md) · [简体](README.zh-CN.md) · [繁體](README.zh-TW.md) · **日本語**
 
 腰椎 MRI の **4クラスセグメンテーション** を、Ahmed et al. (2025) のベースライン（Modified U-Net + Combined Loss）で再現する卒業研究用リポジトリです。
 
