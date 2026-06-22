@@ -1,0 +1,9 @@
+tensorflow<2.11
+SimpleITK
+opencv-python
+numpy
+pandas
+scipy
+scikit-learn
+tqdm
+matplotlib
