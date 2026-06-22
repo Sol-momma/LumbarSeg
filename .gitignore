@@ -29,6 +29,12 @@ checkpoints/
 
 # Personal notes (kept locally, not published)
 docs/
+!docs/
+docs/*
+!docs/archive/
+docs/archive/*
+!docs/archive/readme-snapshots/
+!docs/archive/readme-snapshots/**
 AGENTS.md
 CLAUDE.md
 
