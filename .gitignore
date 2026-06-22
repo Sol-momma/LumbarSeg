@@ -31,6 +31,7 @@ checkpoints/
 docs/
 !docs/
 docs/*
+!docs/windows_gpu.md
 !docs/archive/
 docs/archive/*
 !docs/archive/readme-snapshots/

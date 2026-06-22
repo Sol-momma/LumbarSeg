@@ -54,6 +54,20 @@ python train.py \
   --batch_size 2
 ```
 
+### Windows GPU
+
+Windows PC の NVIDIA GPU で実行する場合は、[docs/windows_gpu.md](docs/windows_gpu.md) を参照してください。native Windows GPU は TensorFlow `2.10` 系が前提です。
+
+最短コマンド:
+
+```powershell
+git clone https://github.com/Sol-momma/LumbarSeg.git
+cd LumbarSeg
+powershell -ExecutionPolicy Bypass -File scripts\setup_windows_native_gpu.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_windows_smoke.ps1 -DataRoot "D:\SPIDER\DataSet"
+powershell -ExecutionPolicy Bypass -File scripts\run_windows_train.ps1 -DataRoot "D:\SPIDER\DataSet"
+```
+
 ## Training & Evaluation
 
 ```bash
