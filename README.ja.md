@@ -138,6 +138,10 @@ LumbarSeg/
 
 ローカル GPU / Colab での軽量な実験記録は [docs/experiments/README.md](docs/experiments/README.md) に保存します。モデル重みや前処理済み slice は Git 管理対象外です。
 
+## Paper Reproduction
+
+論文 reported Dice の完全再現に向けた監査・実行計画は [PAPER_REPRODUCTION_PLAN.md](PAPER_REPRODUCTION_PLAN.md) を参照してください。データ数・filtering・split の監査には `audit_reproduction.py` を使います。
+
 ## Pull Request Rule
 
 PR description は必ず英語で `Why` / `What` / `How` を含めます。詳細は [docs/workflow/pr_description.md](docs/workflow/pr_description.md) を参照してください。

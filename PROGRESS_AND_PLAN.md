@@ -389,19 +389,43 @@ Acceptance criteria:
 The next concrete task should be:
 
 ```text
-Add worst-case visualization support to visualize_predictions.py.
+Run the paper reproduction audit with audit_reproduction.py.
 ```
 
 Why:
 
-- We already have a usable model and qualitative examples.
-- The next improvement should be driven by the worst failures, not random samples.
-- This directly supports both debugging and professor-facing explanation.
+- The baseline code is runnable, but paper-level reproduction is not complete.
+- T2_SPACE strict filtering retained only 14 slices, so the first blocker is data protocol mismatch.
+- The next experiment must quantify raw volumes, extracted slices, kept slices, and train/validation split counts before another long training run.
 
 Proposed branch:
 
 ```bash
-git switch -c codex/worst-case-visualization
+git switch -c codex/paper-reproduction-audit
+```
+
+Run:
+
+```bash
+python audit_reproduction.py \
+  --data_root /mnt/c/Users/ctlab/somomma/DataSet \
+  --output_root outputs/reproduction_audit_all \
+  --extract \
+  --force_reprocess \
+  --write_slice_stats
+```
+
+Then inspect:
+
+```bash
+cat outputs/reproduction_audit_all/reproduction_filtering_audit.csv
+cat outputs/reproduction_audit_all/reproduction_raw_volume_audit.csv
+```
+
+Detailed plan:
+
+```text
+PAPER_REPRODUCTION_PLAN.md
 ```
 
 Proposed PR description structure:
@@ -409,15 +433,15 @@ Proposed PR description structure:
 ```markdown
 ## Why
 
-The current visualization command can show representative validation slices, but it does not automatically surface failure cases. To improve the baseline systematically, we need to inspect the slices where Dice is lowest.
+The baseline code is runnable, but the paper-level T2 SPACE result has not been reproduced yet. The current T2_SPACE strict setting retains too few slices, so we need a reproducible audit of data counts, filtering effects, and split counts before running more long GPU jobs.
 
 ## What
 
-- Add sorting support to `visualize_predictions.py`.
-- Allow selecting worst slices by mean Dice or class-specific Dice.
-- Document the workflow in `README.ja.md`.
+- Add `audit_reproduction.py`.
+- Add `PAPER_REPRODUCTION_PLAN.md`.
+- Document the audit workflow from `README.ja.md`.
 
 ## How
 
-The CLI computes per-slice Dice for the selected split, sorts the candidate slices by the requested score, and renders the lowest-scoring examples to the prediction output directory.
+The audit CLI can optionally extract all SPIDER slices, compute raw volume counts, evaluate multiple non-destructive filtering configurations, and write CSV summaries for raw volumes, filtering, and split counts.
 ```
