@@ -18,6 +18,15 @@ The most important confirmed result so far is the T2 relaxed baseline:
 | Mean Dice | 0.889731 |
 | Mean IoU | 0.829235 |
 
+Full public SPIDER dataset availability has now been confirmed:
+
+| Sequence | Series |
+| --- | ---: |
+| T1 | 196 |
+| T2 | 210 |
+| T2_SPACE | 41 |
+| Total | 447 |
+
 Class-wise Dice:
 
 | Class | Dice |

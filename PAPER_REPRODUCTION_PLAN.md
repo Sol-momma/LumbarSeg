@@ -249,11 +249,17 @@ cat outputs/reproduction_audit_all/reproduction_raw_volume_audit.csv
 
 2026-06-28 の監査結果は [docs/experiments/reproduction_audit_20260628.md](docs/experiments/reproduction_audit_20260628.md) に保存した。
 
+2026-06-29 に full public SPIDER dataset の監査も完了した:
+
+```text
+docs/experiments/reproduction_audit_full_20260629.md
+```
+
 次の T2 SPACE 再現条件:
 
 ```text
 sequence=T2_SPACE
-min_classes=3
+min_classes=4
 imbalance_threshold=0.90
-max_slices_per_sequence=0
+max_slices_per_sequence=1000
 ```
