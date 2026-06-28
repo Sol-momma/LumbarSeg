@@ -115,3 +115,7 @@ LumbarSeg/
 ## Detailed Notes
 
 以前の詳しい README は [docs/archive/readme-snapshots/README.ja.detailed.md](docs/archive/readme-snapshots/README.ja.detailed.md) に退避しています。
+
+## Experiment Records
+
+ローカル GPU / Colab での軽量な実験記録は [docs/experiments/README.md](docs/experiments/README.md) に保存します。モデル重みや前処理済み slice は Git 管理対象外です。
