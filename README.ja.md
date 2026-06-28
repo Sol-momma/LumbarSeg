@@ -137,3 +137,7 @@ LumbarSeg/
 ## Experiment Records
 
 ローカル GPU / Colab での軽量な実験記録は [docs/experiments/README.md](docs/experiments/README.md) に保存します。モデル重みや前処理済み slice は Git 管理対象外です。
+
+## Pull Request Rule
+
+PR description は必ず英語で `Why` / `What` / `How` を含めます。詳細は [docs/workflow/pr_description.md](docs/workflow/pr_description.md) を参照してください。
