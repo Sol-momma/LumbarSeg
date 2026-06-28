@@ -86,6 +86,24 @@ python evaluate.py \
   --model_path outputs/t2_space_baseline/checkpoints/best_model.keras
 ```
 
+### Prediction Visualization
+
+validation slice の入力画像・正解 mask・予測 mask・overlay を PNG で出力します。
+
+```bash
+python visualize_predictions.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/t2_relaxed \
+  --model_path outputs/t2_relaxed/checkpoints/best_model.keras \
+  --sequences T2 \
+  --min_classes 3 \
+  --imbalance_threshold 0.90 \
+  --max_slices_per_sequence 0 \
+  --num_samples 12
+```
+
+出力先は `outputs/t2_relaxed/predictions/` です。各 PNG に対応する slice Dice は `prediction_summary.csv` に保存されます。
+
 ## Quick Facts
 
 | Feature | LumbarSeg |
