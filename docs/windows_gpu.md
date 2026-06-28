@@ -42,6 +42,13 @@ cd LumbarSeg
 powershell -ExecutionPolicy Bypass -File scripts\setup_windows_native_gpu.ps1
 ```
 
+途中で依存関係を入れ直す場合は、古い `.venv` を削除してから再実行します。
+
+```powershell
+Remove-Item -Recurse -Force .\.venv
+powershell -ExecutionPolicy Bypass -File scripts\setup_windows_native_gpu.ps1
+```
+
 GPU が見えているかだけ確認したい場合は、次の出力に `PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')` のような表示が出ることを確認します。
 
 ```powershell
