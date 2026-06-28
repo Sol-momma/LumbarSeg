@@ -34,6 +34,9 @@ docs/*
 !docs/windows_gpu.md
 !docs/experiments/
 !docs/experiments/**
+!docs/workflow/
+docs/workflow/*
+!docs/workflow/pr_description.md
 !docs/archive/
 docs/archive/*
 !docs/archive/readme-snapshots/
