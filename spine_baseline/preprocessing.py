@@ -188,9 +188,19 @@ def filter_slices(
     removed_class_count = 0
     removed_imbalance = 0
     removed_sequence_cap = 0
+    corrupt_files = []
 
     for mask_file in tqdm(sorted(mask_dir.glob("*.npz")), desc="Filtering slices"):
-        mask = np.load(mask_file)["mask"]
+        try:
+            # Interrupted WSL/Windows preprocessing can leave a zero-byte or
+            # half-written `.npz`. Treat that as a repairable data artifact
+            # instead of crashing the whole training run; the companion repair
+            # script can delete the bad image/mask pair before retrying.
+            with np.load(mask_file) as sample:
+                mask = sample["mask"]
+        except Exception as exc:
+            corrupt_files.append(f"{mask_file.name}: {exc}")
+            continue
         unique_classes = np.unique(mask)
         if len(unique_classes) < min_classes:
             removed_class_count += 1
@@ -248,6 +258,8 @@ def filter_slices(
         "removed_imbalance": removed_imbalance,
         "imbalance_basis": "foreground_classes_only",
         "removed_sequence_cap": removed_sequence_cap,
+        "corrupt_files": len(corrupt_files),
+        "corrupt_file_errors": corrupt_files,
         "kept": len(kept),
         "kept_by_sequence": kept_by_sequence,
     }

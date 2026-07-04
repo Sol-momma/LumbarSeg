@@ -263,3 +263,20 @@ min_classes=4
 imbalance_threshold=0.90
 max_slices_per_sequence=1000
 ```
+
+## Interrupted Preprocessing Repair
+
+WSL や Windows storage の問題で前処理が中断された場合、image/mask の片方だけが残ったり、空の `.npz` が残ることがある。
+
+その場合は、再実行前に以下で修復する。
+
+```bash
+python repair_processed_slices.py \
+  --output_root ~/lumbarseg_runs/t2_space_reproduction_4cls090_cap1000 \
+  --dry_run
+
+python repair_processed_slices.py \
+  --output_root ~/lumbarseg_runs/t2_space_reproduction_4cls090_cap1000
+```
+
+その後、`--force_reprocess` を付けずに `train.py` を再実行する。
