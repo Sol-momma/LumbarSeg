@@ -21,6 +21,7 @@ Environment overrides:
   BATCH_SIZE=2
   EPOCHS=100
   FORCE_REPROCESS=0|1
+  RECORD_TO_DOCS=1|0
 EOF
 }
 
@@ -36,6 +37,7 @@ log_dir="${LOG_DIR:-logs}"
 batch_size="${BATCH_SIZE:-2}"
 epochs="${EPOCHS:-100}"
 force_reprocess="${FORCE_REPROCESS:-0}"
+record_to_docs="${RECORD_TO_DOCS:-1}"
 
 sequences=""
 min_classes=4
@@ -105,6 +107,7 @@ echo
   echo "Batch size: $batch_size"
   echo "Epochs: $epochs"
   echo "Force reprocess: $force_reprocess"
+  echo "Record to docs: $record_to_docs"
   echo
 
   python repair_processed_slices.py \
@@ -134,4 +137,17 @@ echo
   echo "Finished: $(date -Is)"
   echo "Metrics: $output_root/validation_metrics.csv"
   echo "Training log: $output_root/checkpoints/training_log.csv"
+
+  if [[ "$record_to_docs" == "1" ]]; then
+    # The heavy artifacts stay under RUN_ROOT, but the small CSV files are the
+    # evidence we need for commits and paper-reproduction decisions. Recording
+    # them here prevents the common failure mode where a long GPU run succeeds
+    # but the exact metric CSV is never copied back into the repository.
+    record_dir="docs/experiments/${output_name}_$(date +%Y%m%d)"
+    mkdir -p "$record_dir"
+    cp "$output_root/validation_metrics.csv" "$record_dir/"
+    cp "$output_root/checkpoints/training_log.csv" "$record_dir/"
+    python scripts/summarize_reproduction_results.py
+    echo "Recorded small experiment artifacts to: $record_dir"
+  fi
 } 2>&1 | tee "$log_path"
