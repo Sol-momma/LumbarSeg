@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ja" data-document-id="lumbarseg-current-status-next-plan-20260802">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LumbarSegの完了済み事項、現在の精度、実行環境の選択肢、次の比較実験と完了条件を一枚で確認する計画書。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3C/svg%3E">
+  <title>LumbarSeg 現状と次の実行計画</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f3f4f0;
+      --surface: #fffef9;
+      --ink: #18211f;
+      --muted: #66716d;
+      --line: #d4dad5;
+      --accent: #0f766e;
+      --accent-soft: #def2ee;
+      --attention: #9a481f;
+      --attention-soft: #fae9df;
+      --success: #27734a;
+      --success-soft: #e2f1e8;
+      --shadow: 0 20px 54px rgb(24 33 31 / 9%);
+      --max-width: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, transparent 0 47px, rgb(15 118 110 / 7%) 47px 48px, transparent 48px),
+        var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); }
+    button, input { font: inherit; }
+    button {
+      flex: 0 0 auto;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--ink);
+      padding: 0.55rem 0.95rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    :focus-visible { outline: 3px solid rgb(15 118 110 / 35%); outline-offset: 3px; }
+    code {
+      padding: 0.1em 0.35em;
+      border-radius: 0.3rem;
+      background: #e9ece8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    .skip-link {
+      position: fixed;
+      z-index: 20;
+      top: 0.75rem;
+      left: 0.75rem;
+      transform: translateY(-180%);
+      border-radius: 0.5rem;
+      background: var(--ink);
+      color: white;
+      padding: 0.6rem 0.9rem;
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .toolbar {
+      position: sticky;
+      z-index: 10;
+      top: 0;
+      border-bottom: 1px solid var(--line);
+      background: rgb(243 244 240 / 94%);
+      backdrop-filter: blur(16px);
+    }
+    .toolbar__inner {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 0.6rem;
+      overflow-x: auto;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0.65rem 1.25rem;
+      scrollbar-width: thin;
+    }
+    .toolbar__title {
+      flex: 0 0 auto;
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      white-space: nowrap;
+    }
+    .toolbar__status { min-width: max-content; color: var(--muted); font-size: 0.8rem; }
+    .document { max-width: var(--max-width); margin: 0 auto; padding: 3.5rem 1.25rem 6rem; }
+    .document-header {
+      padding: clamp(1.5rem, 4vw, 3.5rem);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      margin: 0 0 0.5rem;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+    }
+    h1, h2, h3 { line-height: 1.25; text-wrap: balance; }
+    h1 { max-width: 18ch; margin: 0; font-size: clamp(2rem, 5vw, 4.4rem); letter-spacing: -0.055em; }
+    .subtitle { max-width: 66ch; margin: 1rem 0 0; color: var(--muted); font-size: 1.05rem; }
+    .conclusion {
+      margin: 2.2rem 0 0;
+      padding: 1.25rem 1.4rem;
+      border-left: 6px solid var(--accent);
+      background: var(--accent-soft);
+    }
+    .conclusion__label {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+    }
+    .conclusion p { margin: 0; font-size: clamp(1.15rem, 2.5vw, 1.6rem); font-weight: 760; line-height: 1.5; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--line);
+    }
+    .summary-grid h2 { margin: 0 0 0.55rem; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .goal-copy { margin: 0; font-size: 1.08rem; font-weight: 700; }
+    .progress-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.8rem; }
+    progress { width: 100%; height: 0.8rem; border: 0; border-radius: 999px; overflow: hidden; background: #e5e8e4; }
+    progress::-webkit-progress-bar { background: #e5e8e4; }
+    progress::-webkit-progress-value { background: var(--accent); }
+    progress::-moz-progress-bar { background: var(--accent); }
+    .progress-text { min-width: 7ch; text-align: right; color: var(--accent); font-weight: 800; }
+    .next-decision { margin: 1rem 0 0; padding-top: 1rem; border-top: 1px dashed var(--line); color: var(--attention); }
+    .meta { display: flex; flex-wrap: wrap; gap: 0.65rem 1.2rem; margin: 1.5rem 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.86rem; }
+    .status { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink); font-weight: 750; }
+    .status::before { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--attention); content: ""; }
+    .toc { margin: 2rem 0 0; padding: 0.9rem 0; border-block: 1px solid var(--line); }
+    .toc ol { display: flex; flex-wrap: wrap; gap: 0.45rem 1.1rem; margin: 0; padding: 0; list-style: none; }
+    .toc a { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+    .toc a:hover { color: var(--accent); text-decoration: underline; }
+    .section { scroll-margin-top: 5.5rem; padding-top: 4.5rem; }
+    .section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+      gap: 2rem;
+      align-items: end;
+      margin-bottom: 1.4rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--ink);
+    }
+    .section-heading h2 { margin: 0; font-size: clamp(1.55rem, 3vw, 2.35rem); letter-spacing: -0.035em; }
+    .section-heading p { margin: 0; color: var(--muted); }
+    .definition-list { margin: 0; }
+    .definition-list > div { display: grid; grid-template-columns: minmax(9rem, 0.35fr) minmax(0, 1fr); gap: 1.5rem; padding: 1.15rem 0; border-bottom: 1px solid var(--line); }
+    .definition-list dt { font-weight: 850; }
+    .definition-list dd { margin: 0; }
+    .why-ladder { margin: 0; padding: 0; list-style: none; counter-reset: why; }
+    .why-ladder li { counter-increment: why; display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--line); }
+    .why-ladder li::before { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: 50%; background: var(--ink); color: white; font-weight: 800; content: counter(why); }
+    .evidence-tag { align-self: start; border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.55rem; color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+    .metric { padding: 1rem; border: 1px solid var(--line); background: var(--surface); }
+    .metric span { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric strong { display: block; margin-top: 0.15rem; font-size: 1.5rem; }
+    .metric--attention strong { color: var(--attention); }
+    .decision-outcome { margin: 0 0 1.5rem; padding: 1.25rem 1.4rem; background: var(--accent-soft); font-weight: 700; }
+    .table-wrap { overflow-x: auto; border-block: 1px solid var(--line); }
+    table { width: 100%; min-width: 760px; border-collapse: collapse; background: var(--surface); }
+    caption { padding: 0.9rem 0; background: var(--paper); color: var(--muted); text-align: left; font-size: 0.85rem; }
+    th, td { padding: 0.95rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; letter-spacing: 0.04em; }
+    tr[data-recommended="true"] { background: var(--accent-soft); }
+    table[data-options-table] th:first-child { width: 9rem; min-width: 9rem; }
+    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .scope-column h3 { margin: 0; padding-bottom: 0.7rem; border-bottom: 1px solid var(--ink); }
+    .scope-column ul { margin: 0; padding: 0; list-style: none; }
+    .scope-column li { padding: 0.8rem 0; border-bottom: 1px solid var(--line); }
+    .checklist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2rem; margin: 0; padding: 0; list-style: none; }
+    .check-item { border-bottom: 1px solid var(--line); }
+    .check-item[hidden] { display: none; }
+    .check-item label { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.8rem; align-items: start; min-height: 3.2rem; padding: 0.85rem 0; cursor: pointer; }
+    .check-item input { width: 1.25rem; height: 1.25rem; margin-top: 0.15rem; accent-color: var(--accent); }
+    .check-item:has(input:checked) .check-copy { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+    .task-group { border-top: 2px solid var(--ink); }
+    .task-group + .task-group { margin-top: 2.25rem; }
+    .task-group__header { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: baseline; padding: 1rem 0; }
+    .phase-number { color: var(--accent); font-size: 0.78rem; font-weight: 850; letter-spacing: 0.08em; }
+    .task-group h3 { margin: 0; }
+    .task-meta { color: var(--muted); font-size: 0.82rem; }
+    .task-list { margin: 0; padding: 0; list-style: none; }
+    .task-list .check-item label { grid-template-columns: auto minmax(0, 0.28fr) minmax(0, 1fr); gap: 1rem; }
+    .task-id { color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+    .task-title { display: block; font-weight: 750; }
+    .task-detail { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.87rem; }
+    details { border-bottom: 1px solid var(--line); padding: 0.75rem 0; }
+    summary { cursor: pointer; font-weight: 750; }
+    details > :not(summary) { margin-inline: 1.25rem; }
+    .issue-list { margin: 0; padding: 0; list-style: none; }
+    .issue-list li { display: grid; grid-template-columns: 8rem minmax(0, 1fr) minmax(9rem, auto); gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+    .issue-list strong { color: var(--attention); }
+    .source-list { padding-left: 1.25rem; }
+    .document-footer { margin-top: 5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.82rem; }
+
+    @media (max-width: 760px) {
+      body { background: var(--paper); }
+      .document { padding: 1rem 0.75rem 4rem; }
+      .document-header { padding: 1.25rem; }
+      h1 { font-size: 1.85rem; }
+      .subtitle { margin-top: 0.65rem; font-size: 0.94rem; line-height: 1.6; }
+      .conclusion { margin-top: 1.25rem; padding: 1rem; }
+      .conclusion p { font-size: 1.05rem; }
+      .summary-grid { margin-top: 1.25rem; padding-top: 1rem; }
+      .summary-grid > div:last-child { display: flex; flex-direction: column; }
+      .next-decision { order: -1; margin: 0 0 0.8rem; padding: 0 0 0.8rem; border-top: 0; border-bottom: 1px dashed var(--line); font-size: 0.92rem; }
+      .summary-grid, .section-heading, .scope-grid, .checklist, .metric-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .goal-copy { font-size: 1rem; }
+      .definition-list > div, .why-ladder li, .issue-list li { grid-template-columns: 1fr; gap: 0.45rem; }
+      .why-ladder li::before { width: 1.8rem; height: 1.8rem; }
+      .task-list .check-item label { grid-template-columns: auto 1fr; }
+      .task-list .check-item input { grid-row: 1 / span 2; }
+      .task-id, .task-list .check-copy { grid-column: 2; }
+      .task-group__header { grid-template-columns: 1fr; gap: 0.35rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    @media print {
+      @page { margin: 14mm; }
+      body { background: white; color: black; font-size: 10pt; }
+      .toolbar, .skip-link, .toc { display: none !important; }
+      .document { max-width: none; padding: 0; }
+      .document-header { border: 0; box-shadow: none; padding: 0; }
+      .section { padding-top: 2rem; break-inside: avoid; }
+      details > * { display: block !important; }
+      table, .task-group, .check-item { break-inside: avoid; }
+      table[data-options-table] { min-width: 0; table-layout: fixed; font-size: 8pt; }
+      table[data-options-table] th,
+      table[data-options-table] td { padding: 0.55rem; }
+      table[data-options-table] th:first-child { width: 16%; min-width: 0; }
+      table[data-options-table] th:nth-child(2),
+      table[data-options-table] th:nth-child(3) { width: 21%; }
+      table[data-options-table] th:nth-child(4) { width: 23%; }
+      table[data-options-table] th:last-child { width: 19%; }
+      a { color: black; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+
+  <div class="toolbar" aria-label="文書操作">
+    <div class="toolbar__inner">
+      <span class="toolbar__title">LUMBARSEG PLAN</span>
+      <button type="button" id="filter-toggle" aria-pressed="false">未完了だけ表示</button>
+      <button type="button" id="details-toggle" aria-pressed="false">補足をすべて開く</button>
+      <button type="button" id="save-copy">進捗入りHTMLを保存</button>
+      <button type="button" id="print-page">印刷</button>
+      <button type="button" id="reset-progress">チェックを初期化</button>
+      <span class="toolbar__status" id="save-status" aria-live="polite">この端末に自動保存</span>
+    </div>
+  </div>
+
+  <main class="document" id="main">
+    <header class="document-header">
+      <p class="eyebrow">現状整理・意思決定・実行計画</p>
+      <h1>LumbarSeg 現状と次の実行計画</h1>
+      <p class="subtitle">論文再現の現在地、確認済みの結果、実行環境の選択肢、次の比較実験から改良判断までを一枚で追跡する。</p>
+
+      <div class="conclusion" id="conclusion">
+        <span class="conclusion__label">結論</span>
+        <p>学習・評価の基盤は完成済み。次は Google Colab GPU を第一候補として、T1・T2・T2 SPACE をまとめた比較実験を行う。</p>
+      </div>
+
+      <div class="summary-grid">
+        <div>
+          <h2>Goal</h2>
+          <p class="goal-copy">論文と比較できる再現条件と評価方法を確定し、Dice 約0.97との差を説明したうえで、改良対象を一つに絞れる状態にする。</p>
+        </div>
+        <div>
+          <h2>全体進捗</h2>
+          <div class="progress-row">
+            <progress id="overall-progress" max="100" value="0">0%</progress>
+            <span class="progress-text" id="overall-progress-text">0%</span>
+          </div>
+          <p class="next-decision"><strong>次に決める一点:</strong> 比較実験を Google Colab で進めるか、研究室管理者による WSL 復旧を待つか。</p>
+        </div>
+      </div>
+
+      <ul class="meta">
+        <li class="status">論文再現の途中</li>
+        <li>更新: <time datetime="2026-08-02">2026年8月2日</time></li>
+        <li>担当: 研究実施者</li>
+        <li id="task-count">実行タスク 0 / 0</li>
+      </ul>
+    </header>
+
+    <nav class="toc" aria-label="目次">
+      <ol>
+        <li><a href="#goal">目的とWhy</a></li>
+        <li><a href="#current-result">現在の結果</a></li>
+        <li><a href="#decision">選択肢と結論</a></li>
+        <li><a href="#scope">範囲</a></li>
+        <li><a href="#considerations">事前確認</a></li>
+        <li><a href="#requirements">要件</a></li>
+        <li><a href="#plan">実行計画</a></li>
+        <li><a href="#questions">未決事項</a></li>
+        <li><a href="#sources">根拠</a></li>
+      </ol>
+    </nav>
+
+    <section class="section" id="goal">
+      <div class="section-heading">
+        <h2>目的とWhy</h2>
+        <p>最終目標と、いま比較実験を行う理由を分けて整理する。</p>
+      </div>
+
+      <dl class="definition-list">
+        <div><dt>Goal</dt><dd>Ahmed et al. (2025) の結果を比較可能な条件で再現し、Dice 約0.97に近づけたかを判断できる。</dd></div>
+        <div><dt>Purpose</dt><dd>卒業研究として、再現できた点・できなかった点を根拠付きで説明し、その後の改良が本当に有効かを公平に比較できるようにする。</dd></div>
+        <div><dt>成功の観測方法</dt><dd>新規生成した検証結果で、Mean Dice、腰椎、脊柱管、椎間板の精度を既存結果と論文値へ同じ形式で並べ、条件差も説明する。</dd></div>
+      </dl>
+
+      <ol class="why-ladder" aria-label="Whyの段階">
+        <li><span>T2 SPACE 単独の Mean Dice は <strong>0.8836</strong> で、論文目標の約0.97に届いていない。</span><span class="evidence-tag">実験記録</span></li>
+        <li><span>特に脊柱管の Dice が <strong>0.7859</strong> と低く、平均精度を下げる主要な確認対象になっている。</span><span class="evidence-tag">実験記録</span></li>
+        <li><span>論文が3種類のMRIを別々に学習したか、まとめて学習したかは未確認で、現在の差をモデル性能だけに帰属できない。</span><span class="evidence-tag">未確認</span></li>
+        <li><span>基盤実装と全447シリーズの確認は終わっているため、次は条件を一つ増やした比較実験へ進める段階にある。</span><span class="evidence-tag">確認済み</span></li>
+      </ol>
+    </section>
+
+    <section class="section" id="current-result">
+      <div class="section-heading">
+        <h2>現在の基準結果</h2>
+        <p>T2 SPACE 単独の記録済み実験を、次の比較実験の回帰基準として固定する。</p>
+      </div>
+
+      <div class="metric-grid" aria-label="現在のDiceスコア">
+        <div class="metric"><span>Mean Dice</span><strong>0.8836</strong></div>
+        <div class="metric"><span>腰椎</span><strong>0.9182</strong></div>
+        <div class="metric metric--attention"><span>脊柱管</span><strong>0.7859</strong></div>
+        <div class="metric"><span>椎間板</span><strong>0.8451</strong></div>
+      </div>
+
+      <details>
+        <summary>データと実験条件</summary>
+        <dl class="definition-list">
+          <div><dt>確認済みデータ</dt><dd>218人、T1 196シリーズ、T2 210シリーズ、T2 SPACE 41シリーズ、合計447シリーズ。</dd></div>
+          <div><dt>既存実験</dt><dd><code>t2_space_reproduction_4cls090_cap1000_20260711</code>、Best Epoch 32、Mean IoU 0.8154。</dd></div>
+          <div><dt>次の比較条件</dt><dd>4クラスを含むスライス、偏り上限0.90、各種類最大1000スライス、T1・T2・T2 SPACEを対象。</dd></div>
+        </dl>
+      </details>
+    </section>
+
+    <section class="section" id="decision">
+      <div class="section-heading">
+        <h2>実行環境の選択肢</h2>
+        <p>共用PCへの影響、GPU利用、準備の確実さで同じ粒度に比較する。</p>
+      </div>
+
+      <p class="decision-outcome">推奨は Google Colab GPU。研究室PCを強制終了せず、GPUを使った1 epoch確認から本学習まで進められる。</p>
+
+      <div class="table-wrap">
+        <table data-options-table>
+          <caption>実行環境の比較。実験開始は環境を決めてデータとGPUを確認してから行う。</caption>
+          <thead>
+            <tr><th scope="col">選択肢</th><th scope="col">メリット</th><th scope="col">デメリット</th><th scope="col">リスク・前提</th><th scope="col">判断</th></tr>
+          </thead>
+          <tbody>
+            <tr data-recommended="true"><th scope="row">Google Colab GPU</th><td>共用PCの再起動が不要。GPUをすぐ確認できる。元々の想定環境に近い。</td><td>実行時間や切断の制約がある。Google Drive上のデータ確認が必要。</td><td>DriveにSPIDER一式があり、出力先へ書き込めること。</td><td><strong>推奨</strong><br>最も安全に次へ進める。</td></tr>
+            <tr><th scope="row">WSL復旧後の研究室PC</th><td>研究室PCのGPUと既存データを利用できる。</td><td>現在はWSL管理機能が応答しない。復旧待ちが発生する。</td><td>管理者による復旧または再起動許可が必要。</td><td>管理者対応後の代替案。</td></tr>
+            <tr><th scope="row">Windowsで直接実行</th><td>WSLを使わず研究室PCで実行できる。</td><td>古いTensorFlow・CUDA・cuDNNの組合せを合わせる準備が必要。</td><td>依存関係の不一致で検証開始が遅れる可能性がある。</td><td>第二代替。今は選ばない。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details open>
+        <summary>判断理由と見直し条件</summary>
+        <dl class="definition-list">
+          <div><dt>優先した判断軸</dt><dd>共用PCへの影響を避けること、GPUを利用できること、再現条件を保存できること。</dd></div>
+          <div><dt>受け入れる弱点</dt><dd>Colabの実行時間制限と接続切れに備え、出力をDriveへ保存する必要がある。</dd></div>
+          <div><dt>見直し条件</dt><dd>Colabからデータを読めない、GPUを確保できない、または本学習を完走できない場合は、管理者対応後のWSLへ切り替える。</dd></div>
+        </dl>
+      </details>
+    </section>
+
+    <section class="section" id="scope">
+      <div class="section-heading">
+        <h2>今回の範囲</h2>
+        <p>まず比較可能な再現結果を作る。独自改良は条件差を説明してから始める。</p>
+      </div>
+
+      <div class="scope-grid">
+        <div class="scope-column">
+          <h3>今回やる</h3>
+          <ul>
+            <li>実行環境を一つに決め、GPU・入力データ・出力先を確認する。</li>
+            <li>T1・T2・T2 SPACEの1 epoch確認と本学習を新規実行する。</li>
+            <li>新しい結果を既存のT2 SPACE結果と論文値へ同じ形式で比較する。</li>
+            <li>精度の低い画像を確認し、次に変更する対象を一つに絞る。</li>
+          </ul>
+        </div>
+        <div class="scope-column">
+          <h3>今回はやらない</h3>
+          <ul>
+            <li>管理者の許可なく研究室PCやWSLを強制終了・再起動しない。</li>
+            <li>比較条件が固まる前に独自モデルの改良を始めない。</li>
+            <li>古い生成物だけで新しい実験の合否を判断しない。</li>
+            <li>重いモデルや個別画像をGitへ追加しない。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="considerations">
+      <div class="section-heading">
+        <h2>事前確認</h2>
+        <p>根拠がある項目だけを完了済みにする。チェック状態はブラウザへ保存される。</p>
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><label for="consider-goal"><input id="consider-goal" type="checkbox" checked data-progress data-category="consideration" data-check-id="consider-goal"><span class="check-copy">研究目標と論文目標の約0.97を確認した</span></label></li>
+        <li class="check-item"><label for="consider-data"><input id="consider-data" type="checkbox" checked data-progress data-category="consideration" data-check-id="consider-data"><span class="check-copy">全447シリーズの入力構成を確認した</span></label></li>
+        <li class="check-item"><label for="consider-baseline"><input id="consider-baseline" type="checkbox" checked data-progress data-category="consideration" data-check-id="consider-baseline"><span class="check-copy">T2 SPACEの回帰基準を固定した</span></label></li>
+        <li class="check-item"><label for="consider-safety"><input id="consider-safety" type="checkbox" checked data-progress data-category="consideration" data-check-id="consider-safety"><span class="check-copy">共用PCを勝手に再起動しない境界を確認した</span></label></li>
+        <li class="check-item"><label for="consider-environment"><input id="consider-environment" type="checkbox" data-progress data-category="consideration" data-check-id="consider-environment"><span class="check-copy">実行環境、GPU、データ、出力先を実画面で確認した</span></label></li>
+        <li class="check-item"><label for="consider-paper"><input id="consider-paper" type="checkbox" data-progress data-category="consideration" data-check-id="consider-paper"><span class="check-copy">論文のMRI種類の扱いと評価条件を確認した</span></label></li>
+      </ul>
+    </section>
+
+    <section class="section" id="requirements">
+      <div class="section-heading">
+        <h2>実験要件と受入条件</h2>
+        <p>実行したかではなく、新しく生成された証拠で完了を判断する。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <caption>次の比較実験が満たすべき条件。</caption>
+          <thead><tr><th scope="col">ID</th><th scope="col">優先度</th><th scope="col">要件</th><th scope="col">受入条件</th><th scope="col">状態</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">REQ-001</th><td>必須</td><td>実行環境を安全に確定する</td><td>GPUが1台以上見え、入力と出力先へアクセスできる</td><td>未完了</td></tr>
+            <tr><th scope="row">REQ-002</th><td>必須</td><td>全MRI種類で1 epoch確認を行う</td><td>学習・評価が完了し、モデルとログが新規生成される</td><td>未着手</td></tr>
+            <tr><th scope="row">REQ-003</th><td>必須</td><td>全MRI種類の本学習を行う</td><td>早期終了または100 epochまで完了し、条件・ログ・評価値が保存される</td><td>未着手</td></tr>
+            <tr><th scope="row">REQ-004</th><td>必須</td><td>回帰基準と同じ形式で比較する</td><td>Mean Diceと3クラスのDiceを既存値・論文値へ並べ、改善・悪化・保留を記録する</td><td>未着手</td></tr>
+            <tr><th scope="row">REQ-005</th><td>推奨</td><td>失敗例の原因を分類する</td><td>成功例と失敗例を保存し、脊柱管の精度低下について原因候補を記録する</td><td>未着手</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="plan">
+      <div class="section-heading">
+        <h2>実行計画</h2>
+        <p>完了済みの基盤から、環境決定、比較実験、原因確認、改良判断までを順に追う。</p>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">完了済み</span><h3>再現実験の基盤</h3><span class="task-meta">証拠: データ監査・実装・実験CSV</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-001"><input id="task-001" type="checkbox" checked data-progress data-category="task" data-check-id="task-001"><span class="task-id">TASK-001</span><span class="check-copy"><span class="task-title">SPIDER全データを確認する</span><span class="task-detail">完了: 218人・447シリーズを確認 / 検証: 全データ監査記録</span></span></label></li>
+          <li class="check-item"><label for="task-002"><input id="task-002" type="checkbox" checked data-progress data-category="task" data-check-id="task-002"><span class="task-id">TASK-002</span><span class="check-copy"><span class="task-title">前処理・学習・評価・予測表示を実装する</span><span class="task-detail">完了: 4クラスの一連の処理が動作 / 検証: 既存コードと実験記録</span></span></label></li>
+          <li class="check-item"><label for="task-003"><input id="task-003" type="checkbox" checked data-progress data-category="task" data-check-id="task-003"><span class="task-id">TASK-003</span><span class="check-copy"><span class="task-title">T2 SPACEの基準実験を記録する</span><span class="task-detail">完了: Mean Dice 0.8836を保存 / 検証: reproduction_status.md</span></span></label></li>
+        </ul>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">PHASE 01</span><h3>実行環境を決める</h3><span class="task-meta">出口: GPU・入力・出力を確認</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-004"><input id="task-004" type="checkbox" data-progress data-category="task" data-check-id="task-004"><span class="task-id">TASK-004</span><span class="check-copy"><span class="task-title">Colabか管理者対応後のWSLかを決める</span><span class="task-detail">完了: 使用環境を一つ選択 / 検証: 選択結果を実験記録へ残す</span></span></label></li>
+          <li class="check-item"><label for="task-005"><input id="task-005" type="checkbox" data-progress data-category="task" data-check-id="task-005"><span class="task-id">TASK-005</span><span class="check-copy"><span class="task-title">GPU・SPIDERデータ・出力先を確認する</span><span class="task-detail">完了: 3項目すべてへアクセス可能 / 検証: 実行前チェック結果</span></span></label></li>
+        </ul>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">PHASE 02</span><h3>1 epochの動作確認</h3><span class="task-meta">出口: 学習から評価まで完走</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-006"><input id="task-006" type="checkbox" data-progress data-category="task" data-check-id="task-006"><span class="task-id">TASK-006</span><span class="check-copy"><span class="task-title">全MRI種類の条件で1 epochだけ実行する</span><span class="task-detail">完了: 学習用・検証用画像が0件でなく、GPUで1 epoch完了 / 検証: 実行ログ</span></span></label></li>
+          <li class="check-item"><label for="task-007"><input id="task-007" type="checkbox" data-progress data-category="task" data-check-id="task-007"><span class="task-id">TASK-007</span><span class="check-copy"><span class="task-title">新しいモデル・学習ログ・評価結果を確認する</span><span class="task-detail">完了: best_model.keras、training_log.csv、validation_metrics.csvを生成 / 検証: 更新時刻と内容</span></span></label></li>
+        </ul>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">PHASE 03</span><h3>全MRI種類の本学習</h3><span class="task-meta">出口: 早期終了または100 epoch完了</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-008"><input id="task-008" type="checkbox" data-progress data-category="task" data-check-id="task-008"><span class="task-id">TASK-008</span><span class="check-copy"><span class="task-title">同じ条件で本学習を新規実行する</span><span class="task-detail">完了: <code>all_sequences_reproduction_4cls090_cap1000</code> が完走 / 検証: 実行ログ</span></span></label></li>
+          <li class="check-item"><label for="task-009"><input id="task-009" type="checkbox" data-progress data-category="task" data-check-id="task-009"><span class="task-id">TASK-009</span><span class="check-copy"><span class="task-title">条件と小さな結果ファイルを記録する</span><span class="task-detail">完了: 条件、training_log.csv、validation_metrics.csvを保存 / 検証: 新規成果物のみ</span></span></label></li>
+        </ul>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">PHASE 04</span><h3>結果を比較する</h3><span class="task-meta">出口: 指標ごとの判断を記録</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-010"><input id="task-010" type="checkbox" data-progress data-category="task" data-check-id="task-010"><span class="task-id">TASK-010</span><span class="check-copy"><span class="task-title">既存値・新結果・論文値を同じ表へ並べる</span><span class="task-detail">完了: Mean Diceと3クラスの比較表を作成 / 検証: 数値と出典を照合</span></span></label></li>
+          <li class="check-item"><label for="task-011"><input id="task-011" type="checkbox" data-progress data-category="task" data-check-id="task-011"><span class="task-id">TASK-011</span><span class="check-copy"><span class="task-title">改善・悪化・判断保留を記録する</span><span class="task-detail">完了: 患者分割と論文条件の差を含めて説明 / 検証: 回帰基準からの差分</span></span></label></li>
+        </ul>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">PHASE 05</span><h3>精度が低い画像を確認する</h3><span class="task-meta">出口: 原因候補を分類</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-012"><input id="task-012" type="checkbox" data-progress data-category="task" data-check-id="task-012"><span class="task-id">TASK-012</span><span class="check-copy"><span class="task-title">成功例と失敗例をMRIへ重ねて保存する</span><span class="task-detail">完了: 代表例を確認可能な形で保存 / 検証: 新モデルの予測画像</span></span></label></li>
+          <li class="check-item"><label for="task-013"><input id="task-013" type="checkbox" data-progress data-category="task" data-check-id="task-013"><span class="task-id">TASK-013</span><span class="check-copy"><span class="task-title">脊柱管の低精度原因を分類する</span><span class="task-detail">完了: 向き、前処理、偏り、学習不足、判定不能で分類 / 検証: 代表例と記録</span></span></label></li>
+        </ul>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group__header"><span class="phase-number">PHASE 06</span><h3>改良段階へ進むか判断する</h3><span class="task-meta">出口: 次の変更対象を一つに限定</span></div>
+        <ul class="task-list">
+          <li class="check-item"><label for="task-014"><input id="task-014" type="checkbox" data-progress data-category="task" data-check-id="task-014"><span class="task-id">TASK-014</span><span class="check-copy"><span class="task-title">再現条件の未確認点を順番に確認する</span><span class="task-detail">完了: 分割、向き、スライス、学習条件、評価方法を説明 / 検証: 条件表</span></span></label></li>
+          <li class="check-item"><label for="task-015"><input id="task-015" type="checkbox" data-progress data-category="task" data-check-id="task-015"><span class="task-id">TASK-015</span><span class="check-copy"><span class="task-title">次に試す改良を一つ選ぶ</span><span class="task-detail">完了: 比較可能な仮説と変更対象を一つに限定 / 検証: 承認済みの次期計画</span></span></label></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="questions">
+      <div class="section-heading">
+        <h2>未決事項と仮説</h2>
+        <p>未確認を事実として扱わず、何を見れば決まるかを残す。</p>
+      </div>
+
+      <ul class="issue-list">
+        <li><strong>判断待ち</strong><span>比較実験をGoogle Colabで進めるか、管理者によるWSL復旧を待つか。</span><span>研究実施者</span></li>
+        <li><strong>要確認</strong><span>論文はT1・T2・T2 SPACEを別々に学習したか、まとめて学習したか。</span><span>論文本文・付録を確認</span></li>
+        <li><strong>要確認</strong><span>Google DriveにSPIDERのimages、masks、overview CSVが揃っているか。</span><span>Colab接続時に確認</span></li>
+        <li><strong>仮説</strong><span>全MRI種類をまとめると、T2 SPACE単独より汎化性能が改善する可能性がある。</span><span>新旧結果の比較で判定</span></li>
+      </ul>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-heading">
+        <h2>根拠と参照元</h2>
+        <p>HTMLを開いた場所から、元の記録へ戻って確認できる。</p>
+      </div>
+
+      <ol class="source-list">
+        <li><a href="current_status_and_next_plan.md">現状整理と次の実行プラン（Markdown版）</a> — 2026-08-02</li>
+        <li><a href="../docs/experiments/reproduction_status.md">最新の再現状況</a> — T2 SPACEの精度と次の比較実験</li>
+        <li><a href="../docs/experiments/reproduction_audit_full_20260629.md">全データ監査</a> — 447シリーズとフィルタ条件</li>
+        <li><a href="../PAPER_REPRODUCTION_PLAN.md">既存の論文再現プラン</a></li>
+        <li><a href="../docs/workflow/colab_gpu_checklist.md">Google Colab GPU実行チェック</a></li>
+      </ol>
+    </section>
+
+    <footer class="document-footer">
+      <p>チェック状態はこのブラウザへ自動保存されます。共有・保管する場合は「進捗入りHTMLを保存」で、現在の状態を埋め込んだコピーを作成してください。</p>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const documentId = document.documentElement.dataset.documentId || "untitled";
+      const storageKey = `structured-html-plan:${documentId}`;
+      const checkboxes = [...document.querySelectorAll("input[data-progress]")];
+      const progress = document.querySelector("#overall-progress");
+      const progressText = document.querySelector("#overall-progress-text");
+      const taskCount = document.querySelector("#task-count");
+      const saveStatus = document.querySelector("#save-status");
+      const filterButton = document.querySelector("#filter-toggle");
+      const detailsButton = document.querySelector("#details-toggle");
+      let incompleteOnly = false;
+      let detailsOpen = false;
+      let printOpenState = [];
+
+      const setStatus = (message) => { saveStatus.textContent = message; };
+
+      const readStoredState = () => {
+        try {
+          return JSON.parse(localStorage.getItem(storageKey) || "{}");
+        } catch {
+          // file:// で保存領域が使えない場合も、文書の閲覧と操作は継続する。
+          setStatus("ブラウザ保存は利用できません");
+          return {};
+        }
+      };
+
+      const saveState = () => {
+        const state = Object.fromEntries(checkboxes.map((checkbox) => [checkbox.dataset.checkId, checkbox.checked]));
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state));
+          setStatus("この端末に保存済み");
+        } catch {
+          setStatus("ブラウザ保存は利用できません。HTML保存を使用してください");
+        }
+      };
+
+      const updateProgress = () => {
+        const completed = checkboxes.filter((checkbox) => checkbox.checked).length;
+        const percent = checkboxes.length === 0 ? 0 : Math.round((completed / checkboxes.length) * 100);
+        const tasks = checkboxes.filter((checkbox) => checkbox.dataset.category === "task");
+        const completedTasks = tasks.filter((checkbox) => checkbox.checked).length;
+
+        progress.value = percent;
+        progress.textContent = `${percent}%`;
+        progressText.textContent = `${percent}%`;
+        taskCount.textContent = `実行タスク ${completedTasks} / ${tasks.length}`;
+
+        for (const checkbox of checkboxes) {
+          const item = checkbox.closest(".check-item");
+          if (item) item.hidden = incompleteOnly && checkbox.checked;
+        }
+      };
+
+      const storedState = readStoredState();
+      for (const checkbox of checkboxes) {
+        const stored = storedState[checkbox.dataset.checkId];
+        if (typeof stored === "boolean") checkbox.checked = stored;
+        checkbox.addEventListener("change", () => {
+          saveState();
+          updateProgress();
+        });
+      }
+
+      filterButton.addEventListener("click", () => {
+        incompleteOnly = !incompleteOnly;
+        filterButton.setAttribute("aria-pressed", String(incompleteOnly));
+        filterButton.textContent = incompleteOnly ? "すべて表示" : "未完了だけ表示";
+        updateProgress();
+      });
+
+      detailsButton.addEventListener("click", () => {
+        detailsOpen = !detailsOpen;
+        for (const detail of document.querySelectorAll("details")) detail.open = detailsOpen;
+        detailsButton.setAttribute("aria-pressed", String(detailsOpen));
+        detailsButton.textContent = detailsOpen ? "補足を閉じる" : "補足をすべて開く";
+      });
+
+      document.querySelector("#save-copy").addEventListener("click", () => {
+        const clone = document.cloneNode(true);
+        const originalChecks = [...document.querySelectorAll("input[data-progress]")];
+        const clonedChecks = [...clone.querySelectorAll("input[data-progress]")];
+        clonedChecks.forEach((checkbox, index) => checkbox.toggleAttribute("checked", originalChecks[index].checked));
+        const originalDetails = [...document.querySelectorAll("details")];
+        const clonedDetails = [...clone.querySelectorAll("details")];
+        clonedDetails.forEach((detail, index) => detail.toggleAttribute("open", originalDetails[index].open));
+        const clonedProgress = clone.querySelector("#overall-progress");
+        if (clonedProgress) clonedProgress.setAttribute("value", String(progress.value));
+
+        // チェック状態をHTML属性へ埋め込み、別の端末でも現在地を再現できるコピーにする。
+        const blob = new Blob([`<!doctype html>\n${clone.documentElement.outerHTML}`], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${documentId}-progress.html`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        setStatus("進捗入りHTMLを保存しました");
+      });
+
+      document.querySelector("#print-page").addEventListener("click", () => window.print());
+
+      document.querySelector("#reset-progress").addEventListener("click", () => {
+        if (!window.confirm("この文書のチェック状態をすべて初期化しますか？")) return;
+        for (const checkbox of checkboxes) checkbox.checked = false;
+        try {
+          localStorage.removeItem(storageKey);
+        } catch {
+          // 保存領域の利用可否にかかわらず、画面上の初期化は継続する。
+        }
+        setStatus("チェックを初期化しました");
+        updateProgress();
+      });
+
+      window.addEventListener("beforeprint", () => {
+        printOpenState = [...document.querySelectorAll("details")].map((detail) => detail.open);
+        for (const detail of document.querySelectorAll("details")) detail.open = true;
+      });
+
+      window.addEventListener("afterprint", () => {
+        [...document.querySelectorAll("details")].forEach((detail, index) => {
+          detail.open = printOpenState[index] ?? detail.open;
+        });
+      });
+
+      updateProgress();
+    })();
+  </script>
+</body>
+</html>
