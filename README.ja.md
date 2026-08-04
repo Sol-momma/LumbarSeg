@@ -120,7 +120,7 @@ python regenerate_selected_slices.py \
 python visualize_predictions.py \
   --data_root /path/to/SPIDER/DataSet \
   --output_root /path/to/temporary_validation_slices \
-  --model_path outputs/all_sequences/best_model.keras \
+  --model_path outputs/all_sequences/checkpoints/best_model.keras \
   --filtered_file_list outputs/all_sequences/filtered_files.txt \
   --min_classes 4 \
   --imbalance_threshold 0.90 \
