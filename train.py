@@ -7,6 +7,7 @@ from tensorflow import keras
 
 from arguments import add_data_args, add_model_args, add_optimization_args, get_param_groups
 from spine_baseline.dataset import create_dataset
+from spine_baseline.file_lists import read_file_list
 from spine_baseline.losses import combined_loss
 from spine_baseline.metrics import dice_coefficient, mean_iou
 from spine_baseline.model import build_modified_unet
@@ -19,12 +20,24 @@ def prepare_output(output_root: Path) -> Path:
     return checkpoint_dir
 
 
+def write_file_list(path: Path, files: list[str]) -> None:
+    """Persist the exact cohort used by this run for reproducible evaluation."""
+    path.write_text("\n".join(files) + ("\n" if files else ""), encoding="utf-8")
+
+
 def main() -> None:
     parser = ArgumentParser(description="Train the Ahmed et al. 2025 baseline Modified U-Net.")
     add_data_args(parser)
     add_model_args(parser)
     add_optimization_args(parser)
-    data, model_params, opt = get_param_groups(parser.parse_args())
+    parser.add_argument(
+        "--validation_file_list",
+        type=Path,
+        default=None,
+        help="Exact validation cohort for model selection and early stopping.",
+    )
+    args = parser.parse_args()
+    data, model_params, opt = get_param_groups(args)
 
     np.random.seed(opt.seed)
     tf.random.set_seed(opt.seed)
@@ -44,9 +57,21 @@ def main() -> None:
         data.max_slices_per_sequence,
     )
     train_files, val_files, unmatched = split_train_val(data.data_root, kept_files)
+    if args.validation_file_list is not None:
+        # Model selection is part of evaluation. Reusing the frozen cohort here
+        # prevents a candidate filter from choosing its best epoch on an easier
+        # validation set even when the final evaluator is correctly frozen.
+        val_files = read_file_list(args.validation_file_list)
 
     if not train_files or not val_files:
         raise ValueError("Train/validation split is empty. Check data_root and filtered slice names.")
+
+    # Filtering rules are experiment inputs, so recomputing the validation
+    # cohort in evaluate.py could make an easier cohort look like a better
+    # model. Save the exact lists before training and reuse validation_files.txt.
+    write_file_list(data.output_root / "train_files.txt", train_files)
+    write_file_list(data.output_root / "validation_files.txt", val_files)
+    write_file_list(data.output_root / "unmatched_files.txt", unmatched)
 
     print("Extraction stats:", extract_stats)
     print("Filtering stats:", filter_stats)

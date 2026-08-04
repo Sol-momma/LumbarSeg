@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from check_reproduction_target import PAPER_DICE_TARGETS, evaluate_target
+
 
 @dataclass
 class ExperimentResult:
@@ -13,6 +15,9 @@ class ExperimentResult:
     metrics_path: Path
     training_log_path: Path | None
     mean_dice: float
+    foreground_macro_dice: float | None
+    score_target_met: bool
+    t2_space_scope_verified: bool
     mean_iou: float
     vertebrae_dice: float | None
     canal_dice: float | None
@@ -55,7 +60,16 @@ def read_training_best(training_log_path: Path | None) -> tuple[int | None, floa
     )
 
 
-def discover_results(experiments_root: Path) -> list[ExperimentResult]:
+def read_run_sequence(metrics_path: Path) -> str | None:
+    config_path = metrics_path.parent / "run_config.tsv"
+    if not config_path.exists():
+        return None
+    with config_path.open(newline="", encoding="utf-8") as handle:
+        rows = {row["key"]: row["value"] for row in DictReader(handle, delimiter="\t")}
+    return rows.get("sequences")
+
+
+def discover_results(experiments_root: Path, target_dice: float = 0.97) -> list[ExperimentResult]:
     results: list[ExperimentResult] = []
     for metrics_path in sorted(experiments_root.glob("*/validation_metrics.csv")):
         rows = read_metrics(metrics_path)
@@ -69,22 +83,51 @@ def discover_results(experiments_root: Path) -> list[ExperimentResult]:
         # we need when explaining where the reproduction gap remains.
         training_log_path = metrics_path.parent / "training_log.csv"
         best_epoch, best_val_mean_iou, best_val_dice = read_training_best(training_log_path)
+        vertebrae_dice = parse_float(rows.get("Vertebrae", {}).get("dice"))
+        canal_dice = parse_float(rows.get("Spinal Canal", {}).get("dice"))
+        ivd_dice = parse_float(rows.get("IVDs", {}).get("dice"))
+        foreground_scores = {
+            "Vertebrae": vertebrae_dice,
+            "Spinal Canal": canal_dice,
+            "IVDs": ivd_dice,
+        }
+        if all(value is not None for value in foreground_scores.values()):
+            target_check = evaluate_target(
+                {name: float(value) for name, value in foreground_scores.items()},
+                foreground_macro_target=target_dice,
+            )
+            foreground_macro_dice = target_check.foreground_macro_dice
+            score_target_met = target_check.score_target_met
+        else:
+            foreground_macro_dice = None
+            score_target_met = False
+
         results.append(
             ExperimentResult(
                 name=metrics_path.parent.name,
                 metrics_path=metrics_path,
                 training_log_path=training_log_path if training_log_path.exists() else None,
                 mean_dice=float(mean["dice"]),
+                foreground_macro_dice=foreground_macro_dice,
+                score_target_met=score_target_met,
+                t2_space_scope_verified=read_run_sequence(metrics_path) == "T2_SPACE",
                 mean_iou=float(mean["iou"]),
-                vertebrae_dice=parse_float(rows.get("Vertebrae", {}).get("dice")),
-                canal_dice=parse_float(rows.get("Spinal Canal", {}).get("dice")),
-                ivd_dice=parse_float(rows.get("IVDs", {}).get("dice")),
+                vertebrae_dice=vertebrae_dice,
+                canal_dice=canal_dice,
+                ivd_dice=ivd_dice,
                 best_epoch=best_epoch,
                 best_val_mean_iou=best_val_mean_iou,
                 best_val_dice=best_val_dice,
             )
         )
-    return sorted(results, key=lambda item: item.mean_dice, reverse=True)
+    # The old four-class Mean includes Background and can overstate progress on
+    # the anatomy that matters. Campaign ranking now follows the agreed
+    # foreground-only macro while the historical Mean remains visible.
+    return sorted(
+        results,
+        key=lambda item: item.foreground_macro_dice if item.foreground_macro_dice is not None else float("-inf"),
+        reverse=True,
+    )
 
 
 def fmt(value: float | None) -> str:
@@ -95,21 +138,25 @@ def make_recommendation(results: list[ExperimentResult], target_dice: float) -> 
     if not results:
         return "No recorded validation metrics were found. Run a reproduction preset first."
 
-    best = results[0]
-    has_all_sequences = any(result.name.startswith("all_sequences") for result in results)
-    if best.mean_dice >= target_dice:
+    verified_pass = next(
+        (result for result in results if result.score_target_met and result.t2_space_scope_verified),
+        None,
+    )
+    if verified_pass is not None:
         return (
-            f"Best recorded Mean Dice is {best.mean_dice:.4f}, which meets the target "
-            f"{target_dice:.2f}. Start improvement experiments only after confirming the paper metric definition."
+            f"A verified T2 SPACE foreground macro Dice is {verified_pass.foreground_macro_dice:.4f}, and every "
+            "foreground class meets its paper value with a T2 SPACE manifest. The campaign target is met."
         )
-    if not has_all_sequences:
+    best = results[0]
+    if best.score_target_met:
         return (
-            "Run `all_4cls090_cap1000` next. The current recorded results do not yet include "
-            "the combined T1/T2/T2_SPACE condition, so the reproduction baseline is incomplete."
+            f"Best recorded foreground macro Dice is {best.foreground_macro_dice:.4f}, and the numeric "
+            "score target is met, but T2 SPACE scope is not verified by a run manifest."
         )
     return (
-        f"Best recorded Mean Dice is {best.mean_dice:.4f}, below the target {target_dice:.2f}. "
-        "Keep reproduction work active before treating improvements as comparable to the paper."
+        f"Best recorded foreground macro Dice is {fmt(best.foreground_macro_dice)}, below the target "
+        f"{target_dice:.4f}, or at least one class is below its paper floor. "
+        "Run the next controlled T2 SPACE candidate in the goal campaign."
     )
 
 
@@ -118,23 +165,32 @@ def write_markdown(results: list[ExperimentResult], output_path: Path, target_di
         "# Reproduction Status",
         "",
         f"Updated: {date.today().isoformat()}",
-        f"Target paper-level Dice: `{target_dice:.2f}`",
+        f"Target foreground macro Dice: `{target_dice:.4f}`",
+        (
+            "Class floors: "
+            f"IVDs `{PAPER_DICE_TARGETS['IVDs']:.4f}`, "
+            f"Vertebrae `{PAPER_DICE_TARGETS['Vertebrae']:.4f}`, "
+            f"Spinal Canal `{PAPER_DICE_TARGETS['Spinal Canal']:.4f}`"
+        ),
         "",
         "## Summary",
         "",
-        "| Experiment | Mean Dice | Mean IoU | Vertebrae Dice | Canal Dice | IVD Dice | Best Epoch | Train Val Dice |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| Experiment | Foreground Macro Dice | 4-Class Mean Dice | Mean IoU | Vertebrae Dice | Canal Dice | IVD Dice | Score Target | T2 SPACE Scope | Best Epoch | Train Val Dice |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | ---: |",
     ]
 
     for result in results:
         lines.append(
             "| "
             f"{result.name} | "
+            f"{fmt(result.foreground_macro_dice)} | "
             f"{fmt(result.mean_dice)} | "
             f"{fmt(result.mean_iou)} | "
             f"{fmt(result.vertebrae_dice)} | "
             f"{fmt(result.canal_dice)} | "
             f"{fmt(result.ivd_dice)} | "
+            f"{'PASS' if result.score_target_met else 'MISS'} | "
+            f"{'VERIFIED' if result.t2_space_scope_verified else 'UNVERIFIED'} | "
             f"{result.best_epoch if result.best_epoch is not None else '-'} | "
             f"{fmt(result.best_val_dice)} |"
         )
@@ -147,9 +203,12 @@ def write_markdown(results: list[ExperimentResult], output_path: Path, target_di
         "",
         "## Notes",
         "",
-        "- `Mean Dice` comes from `evaluate.py` class-wise validation metrics.",
+        "- `Foreground Macro Dice` averages IVDs, Vertebrae, and Spinal Canal only.",
+        "- `4-Class Mean Dice` is the historical evaluator row and includes Background; it is not the success oracle.",
+        "- `Score Target PASS` requires the foreground macro target and all three paper class floors.",
+        "- Campaign success additionally requires `T2 SPACE Scope VERIFIED` from `run_config.tsv`.",
         "- `Train Val Dice` comes from the Keras training CSV and is secondary for paper comparison.",
-        "- Missing all-sequence results mean the reproduction baseline should still be treated as incomplete.",
+        "- Mixed-sequence results are diagnostic and must not replace the T2 SPACE success definition.",
         "",
     ])
 
@@ -164,7 +223,7 @@ def main() -> None:
     parser.add_argument("--target_dice", type=float, default=0.97)
     args = parser.parse_args()
 
-    results = discover_results(args.experiments_root)
+    results = discover_results(args.experiments_root, args.target_dice)
     write_markdown(results, args.output, args.target_dice)
     print(f"Wrote {args.output}")
     print(make_recommendation(results, args.target_dice))

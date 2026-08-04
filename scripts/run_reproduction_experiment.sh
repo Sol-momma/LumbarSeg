@@ -17,11 +17,16 @@ Presets:
 Environment overrides:
   DATA_ROOT=/mnt/c/Users/ctlab/somomma/dataset
   RUN_ROOT=$HOME/lumbarseg_runs
+  OUTPUT_ROOT=$RUN_ROOT/<preset-output-name>
   LOG_DIR=logs
   BATCH_SIZE=2
   EPOCHS=100
+  SEED=42
   FORCE_REPROCESS=0|1
   RECORD_TO_DOCS=1|0
+  EVAL_FILE_LIST=/path/to/fixed_validation_files.txt
+  EVAL_COHORT_MANIFEST=/path/to/fixed_validation_cohort.tsv
+  ALLOW_DIRTY_RUN=0|1
 EOF
 }
 
@@ -36,8 +41,10 @@ run_root="${RUN_ROOT:-$HOME/lumbarseg_runs}"
 log_dir="${LOG_DIR:-logs}"
 batch_size="${BATCH_SIZE:-2}"
 epochs="${EPOCHS:-100}"
+seed="${SEED:-42}"
 force_reprocess="${FORCE_REPROCESS:-0}"
 record_to_docs="${RECORD_TO_DOCS:-1}"
+allow_dirty_run="${ALLOW_DIRTY_RUN:-0}"
 
 sequences=""
 min_classes=4
@@ -73,9 +80,54 @@ case "$preset" in
     ;;
 esac
 
-output_root="${run_root}/${output_name}"
+# A campaign must isolate every candidate so preprocessed slices, checkpoints,
+# and metrics cannot silently overwrite another method. Keeping the old path as
+# the fallback preserves all existing one-preset commands and documentation.
+output_root="${OUTPUT_ROOT:-${run_root}/${output_name}}"
+eval_file_list_override="${EVAL_FILE_LIST:-}"
+eval_file_list="${eval_file_list_override:-$output_root/validation_files.txt}"
+eval_cohort_manifest="${EVAL_COHORT_MANIFEST:-}"
+
+# A result tied to uncommitted code cannot be recreated from its Git revision.
+# Keep an explicit escape hatch for local debugging, but reject it by default.
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Experiment runner must execute inside a Git worktree." >&2
+  exit 2
+fi
+git_revision="$(git rev-parse HEAD)"
+if [[ "$allow_dirty_run" != "1" ]] && [[ -n "$(git status --porcelain)" ]]; then
+  echo "Repository has uncommitted or untracked changes; refusing an auditable experiment." >&2
+  exit 2
+fi
 mkdir -p "$log_dir" "$output_root"
 log_path="${log_dir}/${output_name}_$(date +%Y%m%d_%H%M%S).log"
+
+# The metrics CSV has no sequence or revision metadata of its own. Persisting a
+# small manifest beside it prevents a mixed-sequence result from being accepted
+# as T2 SPACE evidence and makes a detached tmux run auditable after reconnect.
+python_executable="$(command -v python)"
+python_version="$(python --version 2>&1)"
+platform="$(uname -sr)"
+{
+  printf 'key\tvalue\n'
+  printf 'git_revision\t%s\n' "$git_revision"
+  printf 'preset\t%s\n' "$preset"
+  printf 'sequences\t%s\n' "${sequences:-ALL}"
+  printf 'data_root\t%s\n' "$data_root"
+  printf 'output_root\t%s\n' "$output_root"
+  printf 'min_classes\t%s\n' "$min_classes"
+  printf 'imbalance_threshold\t%s\n' "$imbalance_threshold"
+  printf 'max_slices_per_sequence\t%s\n' "$max_slices_per_sequence"
+  printf 'batch_size\t%s\n' "$batch_size"
+  printf 'epochs\t%s\n' "$epochs"
+  printf 'seed\t%s\n' "$seed"
+  printf 'evaluation_file_list\t%s\n' "$eval_file_list"
+  printf 'python_executable\t%s\n' "$python_executable"
+  printf 'python_version\t%s\n' "$python_version"
+  printf 'platform\t%s\n' "$platform"
+  printf 'git_clean\t%s\n' "$([[ "$allow_dirty_run" == "1" ]] && echo unchecked || echo true)"
+  printf 'started_at\t%s\n' "$(date -Is)"
+} > "$output_root/run_config.tsv"
 
 sequence_args=()
 if [[ -n "$sequences" ]]; then
@@ -85,6 +137,11 @@ fi
 force_args=()
 if [[ "$force_reprocess" == "1" ]]; then
   force_args=(--force_reprocess)
+fi
+
+validation_args=()
+if [[ -n "$eval_file_list_override" ]]; then
+  validation_args=(--validation_file_list "$eval_file_list")
 fi
 
 echo "Preset: $preset"
@@ -106,6 +163,8 @@ echo
   echo "Max slices per sequence: $max_slices_per_sequence"
   echo "Batch size: $batch_size"
   echo "Epochs: $epochs"
+  echo "Seed: $seed"
+  echo "Git revision: $git_revision"
   echo "Force reprocess: $force_reprocess"
   echo "Record to docs: $record_to_docs"
   echo
@@ -120,10 +179,37 @@ echo
     "${sequence_args[@]}" \
     --batch_size "$batch_size" \
     --epochs "$epochs" \
+    --seed "$seed" \
     --min_classes "$min_classes" \
     --imbalance_threshold "$imbalance_threshold" \
     --max_slices_per_sequence "$max_slices_per_sequence" \
+    "${validation_args[@]}" \
     "${force_args[@]}"
+
+  if [[ ! -s "$eval_file_list" ]]; then
+    echo "Validation file list is missing or empty: $eval_file_list" >&2
+    exit 2
+  fi
+
+  local_cohort_manifest="$output_root/validation_cohort.tsv"
+  if [[ -n "$eval_cohort_manifest" ]]; then
+    python scripts/hash_validation_cohort.py \
+      --output-root "$output_root" \
+      --file-list "$eval_file_list" \
+      --verify "$eval_cohort_manifest"
+    cp "$eval_cohort_manifest" "$local_cohort_manifest"
+  else
+    python scripts/hash_validation_cohort.py \
+      --output-root "$output_root" \
+      --file-list "$eval_file_list" \
+      --write "$local_cohort_manifest"
+  fi
+
+  printf 'train_slices\t%s\n' "$(wc -l < "$output_root/train_files.txt" | tr -d ' ')" >> "$output_root/run_config.tsv"
+  printf 'validation_slices\t%s\n' "$(wc -l < "$eval_file_list" | tr -d ' ')" >> "$output_root/run_config.tsv"
+  printf 'filtered_slices\t%s\n' "$(wc -l < "$output_root/filtered_files.txt" | tr -d ' ')" >> "$output_root/run_config.tsv"
+  printf 'validation_file_list_sha256\t%s\n' "$(sha256sum "$eval_file_list" | awk '{print $1}')" >> "$output_root/run_config.tsv"
+  printf 'validation_cohort_sha256\t%s\n' "$(sha256sum "$local_cohort_manifest" | awk '{print $1}')" >> "$output_root/run_config.tsv"
 
   python evaluate.py \
     --data_root "$data_root" \
@@ -131,6 +217,7 @@ echo
     --min_classes "$min_classes" \
     --imbalance_threshold "$imbalance_threshold" \
     --max_slices_per_sequence "$max_slices_per_sequence" \
+    --file_list "$eval_file_list" \
     --model_path "$output_root/checkpoints/best_model.keras"
 
   echo
@@ -147,6 +234,7 @@ echo
     mkdir -p "$record_dir"
     cp "$output_root/validation_metrics.csv" "$record_dir/"
     cp "$output_root/checkpoints/training_log.csv" "$record_dir/"
+    cp "$output_root/run_config.tsv" "$record_dir/"
     python scripts/summarize_reproduction_results.py
     echo "Recorded small experiment artifacts to: $record_dir"
   fi

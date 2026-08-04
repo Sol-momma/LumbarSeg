@@ -17,6 +17,9 @@
 
 ## Automation
 
+精度0.97キャンペーンの合格条件と実験順は
+[T2 SPACE 精度0.97キャンペーン計画](t2_space_accuracy_097_plan.md)を参照する。
+
 WSL GPU 側で次の再現実験を実行する。
 
 ```bash
@@ -28,3 +31,18 @@ bash scripts/run_reproduction_experiment.sh all_4cls090_cap1000
 ```bash
 python scripts/summarize_reproduction_results.py
 ```
+
+検証CSVが新しい合格条件を満たすか確認する。
+
+```bash
+python scripts/check_reproduction_target.py /path/to/validation_metrics.csv
+```
+
+単一GPUで複数のT2 SPACEプリセットを順番に実行する。キューは通常シェルからの起動を拒否するため、tmux内で実行する。
+
+```bash
+tmux new-session -s lumbarseg-goal
+bash scripts/run_reproduction_goal_queue.sh t2_space_4cls090_cap1000
+```
+
+開始後は`Ctrl-b`、続けて`d`で画面から離れる。再接続は`tmux attach -t lumbarseg-goal`を使う。
