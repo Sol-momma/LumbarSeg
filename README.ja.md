@@ -104,6 +104,33 @@ python visualize_predictions.py \
 
 出力先は `outputs/t2_relaxed/predictions/` です。各 PNG に対応する slice Dice は `prediction_summary.csv` に保存されます。
 
+検証データ全体を採点し、全体・椎骨・脊柱管・椎間板ごとに低精度な画像を8枚ずつ確認する場合は、次を実行します。
+
+中間画像を削除済みの場合は、保存した `filtered_files.txt` から検証用画像だけを別の場所へ再生成します。この処理は元のMHAと対象一覧を読み取るだけで、Google Driveの原本や保存済み一覧を変更しません。
+
+```bash
+python regenerate_selected_slices.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root /path/to/temporary_validation_slices \
+  --file_list /path/to/experiment/filtered_files.txt \
+  --split validation
+```
+
+```bash
+python visualize_predictions.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root /path/to/temporary_validation_slices \
+  --model_path outputs/all_sequences/best_model.keras \
+  --filtered_file_list outputs/all_sequences/filtered_files.txt \
+  --min_classes 4 \
+  --imbalance_threshold 0.90 \
+  --max_slices_per_sequence 1000 \
+  --batch_size 2 \
+  --worst_per_metric 8
+```
+
+`prediction_summary.csv` には検証データ全件のDiceと正解・予測領域の画素数が保存されます。低精度画像は `worst_dice_mean/`、`worst_dice_vertebrae/`、`worst_dice_spinal_canal/`、`worst_dice_ivds/` に分かれ、順位は `worst_case_summary.csv` で確認できます。
+
 ## Quick Facts
 
 | Feature | LumbarSeg |

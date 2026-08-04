@@ -71,7 +71,8 @@ def iter_sagittal_slices(volume: np.ndarray, mask: np.ndarray):
 
 
 def extract_slices(data_root: Path, output_root: Path, target_height: int, target_width: int,
-                   sequences: str | None = None, force: bool = False) -> dict:
+                   sequences: str | None = None, force: bool = False,
+                   selected_files: set[str] | None = None) -> dict:
     image_dir = data_root / "images"
     mask_dir = data_root / "masks"
     output_img_dir = output_root / "images"
@@ -84,6 +85,19 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
     if allowed_sequences is not None:
         mha_files = [name for name in mha_files if classify_sequence(name) in allowed_sequences]
 
+    selected_by_series: dict[str, set[str]] | None = None
+    if selected_files is not None:
+        # Failure analysis only needs a few hundred validation slices. Grouping
+        # the requested names by series lets us read each source MHA once while
+        # avoiding the roughly 10 GB full preprocessing output.
+        selected_by_series = {}
+        for slice_name in selected_files:
+            selected_by_series.setdefault(get_series_id(slice_name), set()).add(slice_name)
+        mha_files = [
+            name for name in mha_files
+            if name.removesuffix(".mha") in selected_by_series
+        ]
+
     stats = {"total_slices": 0, "files_processed": 0, "skipped_existing": 0, "axes": {}, "errors": []}
 
     for filename in tqdm(mha_files, desc="Extracting sagittal slices"):
@@ -93,11 +107,18 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
             continue
 
         base_name = filename.removesuffix(".mha")
+        requested_for_series = selected_by_series.get(base_name) if selected_by_series is not None else None
         existing = list(output_img_dir.glob(f"{base_name}_s*.npz"))
         if existing and not force:
-            stats["skipped_existing"] += 1
-            stats["total_slices"] += len(existing)
-            continue
+            if requested_for_series is None:
+                stats["skipped_existing"] += 1
+                stats["total_slices"] += len(existing)
+                continue
+            existing_names = {path.name for path in existing}
+            if requested_for_series.issubset(existing_names):
+                stats["skipped_existing"] += 1
+                stats["total_slices"] += len(requested_for_series)
+                continue
 
         try:
             image_itk = sitk.ReadImage(str(image_dir / filename))
@@ -117,11 +138,13 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
                     continue
 
                 mask_4class = map_labels(mask_slice)
+                slice_name = f"{base_name}_s{slice_index:03d}.npz"
+                if requested_for_series is not None and slice_name not in requested_for_series:
+                    continue
                 image_resized = cv2.resize(image_slice, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
                 mask_resized = cv2.resize(mask_4class, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
                 spacing = resized_slice_spacing(image_slice.shape, axis, spacings, target_height, target_width)
 
-                slice_name = f"{base_name}_s{slice_index:03d}.npz"
                 np.savez_compressed(
                     output_img_dir / slice_name,
                     image=image_resized.astype(np.float32),
@@ -145,6 +168,15 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
             stats["files_processed"] += 1
         except Exception as exc:
             stats["errors"].append(f"{filename}: {exc}")
+
+    if selected_files is not None:
+        written_images = {path.name for path in output_img_dir.glob("*.npz")}
+        written_masks = {path.name for path in output_mask_dir.glob("*.npz")}
+        missing = sorted(selected_files - (written_images & written_masks))
+        if missing:
+            stats["errors"].append(
+                f"Selected slices missing after extraction: {len(missing)}; first={missing[:5]}"
+            )
 
     return stats
 
