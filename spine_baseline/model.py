@@ -1,4 +1,11 @@
-from tensorflow.keras import Model, layers
+from tensorflow import keras
+
+# Some TensorFlow distributions expose Keras through the ``tf.keras`` lazy
+# attribute without installing an importable ``tensorflow.keras`` module.
+# Importing the public ``keras`` attribute keeps the model definition working
+# in both layouts while preserving the same Keras classes and behavior.
+Model = keras.Model
+layers = keras.layers
 
 
 PAPER_ENCODER_FILTERS = (16, 32, 64, 128, 256)
