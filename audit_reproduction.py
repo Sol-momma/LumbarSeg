@@ -7,6 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from arguments import add_data_args, get_data_params
+from spine_baseline.filtering import dominant_foreground_fraction
 
 
 @dataclass(frozen=True)
@@ -49,14 +50,6 @@ def class_fractions(mask: np.ndarray, num_classes: int = 4) -> dict[int, float]:
     if total == 0:
         return {class_id: 0.0 for class_id in range(num_classes)}
     return {class_id: float(counts[class_id] / total) for class_id in range(num_classes)}
-
-
-def dominant_foreground_fraction(mask: np.ndarray) -> float:
-    foreground = mask[mask > 0]
-    if foreground.size == 0:
-        return 1.0
-    _, counts = np.unique(foreground, return_counts=True)
-    return float(counts.max() / counts.sum())
 
 
 def get_series_id(slice_filename: str) -> str:
@@ -291,6 +284,8 @@ def main() -> None:
             target_width=data.target_width,
             sequences=data.sequences,
             force=data.force_reprocess,
+            orientation_mode=data.orientation_mode,
+            orientation_manifest=data.orientation_manifest,
         )
         print("Extraction stats:", extract_stats)
 

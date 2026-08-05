@@ -55,10 +55,16 @@ GPU が見えているかだけ確認したい場合は、次の出力に `Physi
 .\.venv\Scripts\python.exe -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
 ```
 
-1 epoch の smoke test を実行します。
+1 epoch の smoke test を実行します。学習用・検証用の固定一覧を必ず指定し、既存の本実験とは別の出力先を使います。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_windows_smoke.ps1 -DataRoot "D:\SPIDER\DataSet"
+powershell -ExecutionPolicy Bypass -File scripts\run_windows_smoke.ps1 `
+  -DataRoot "D:\SPIDER\DataSet" `
+  -OutputRoot "outputs\t2_space_baseline" `
+  -RunOutputRoot "outputs\batch8_probe_001" `
+  -TrainFileList "cohorts\batch8_train.txt" `
+  -ValidationFileList "cohorts\batch8_validation.txt" `
+  -BatchSize 8
 ```
 
 本学習と評価を実行します。
@@ -108,6 +114,59 @@ python -m pip install --upgrade pip
 python -m pip install "tensorflow[and-cuda]" SimpleITK opencv-python numpy pandas scipy scikit-learn tqdm matplotlib
 python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
 python train.py --data_root /mnt/d/SPIDER/DataSet --output_root outputs/t2_space_baseline --sequences T2_SPACE --epochs 1 --batch_size 2
-python train.py --data_root /mnt/d/SPIDER/DataSet --output_root outputs/t2_space_baseline --sequences T2_SPACE --batch_size 8 --epochs 100
 python evaluate.py --data_root /mnt/d/SPIDER/DataSet --output_root outputs/t2_space_baseline --model_path outputs/t2_space_baseline/checkpoints/best_model.keras
 ```
+
+### WSLでbatch size 8だけを安全に確認する
+
+これは精度実験ではなく、GPUメモリ上でbatch size 8が1回の学習と検証を完了できるかだけを確認する試験です。既存の前処理済みデータを読み取りますが、既存のモデルや結果は上書きしません。
+
+まず、固定baselineの一覧から8件ずつを新しい確認用フォルダへコピーします。
+
+```bash
+mkdir -p ~/lumbarseg_runs/cohorts
+sed -n '1,8p' ~/lumbarseg_runs/goal_t2_space_baseline_20260805/01_t2_space_4cls090_cap1000/train_files.txt \
+  > ~/lumbarseg_runs/cohorts/batch8_train.txt
+sed -n '1,8p' ~/lumbarseg_runs/goal_t2_space_baseline_20260805/01_t2_space_4cls090_cap1000/validation_files.txt \
+  > ~/lumbarseg_runs/cohorts/batch8_validation.txt
+```
+
+次に、既存結果と異なる新しい出力先を指定して実行します。
+
+実行前に、TensorFlowを入れた環境を有効化し、`command -v python`で使用するPythonを確認してください。上の手順どおりリポジトリ内へ作った場合は次です。
+
+```bash
+source .venv/bin/activate
+command -v python
+```
+
+```bash
+DATA_ROOT="/mnt/g/My Drive/DataSet" \
+PROCESSED_ROOT="$HOME/lumbarseg_runs/goal_t2_space_baseline_20260805/01_t2_space_4cls090_cap1000" \
+RUN_OUTPUT_ROOT="$HOME/lumbarseg_runs/batch8_probe_001" \
+TRAIN_FILE_LIST="$HOME/lumbarseg_runs/cohorts/batch8_train.txt" \
+VALIDATION_FILE_LIST="$HOME/lumbarseg_runs/cohorts/batch8_validation.txt" \
+BATCH_SIZE=8 \
+PYTHON_EXECUTABLE="$(command -v python)" \
+bash scripts/run_wsl_batch_probe.sh
+```
+
+成功条件は、GPUが検出され、1 epochの学習と検証がエラーなく終了することです。ここで得た精度は8件だけの確認値なので、0.97判定には使いません。
+
+### 論文との差を調べる監査
+
+監査は生データを読み取るだけで、画像やマスクを変更しません。出力先にはCSV、確認用画像、方向補正案だけを新規作成します。
+
+```bash
+python scripts/audit_data_alignment.py \
+  --data_root "/mnt/g/My Drive/DataSet" \
+  --output_dir "$HOME/lumbarseg_runs/audits/data_alignment_001"
+
+python scripts/audit_filter_sensitivity.py \
+  --data_root "/mnt/g/My Drive/DataSet" \
+  --processed_root "$HOME/lumbarseg_runs/goal_t2_space_baseline_20260805/01_t2_space_4cls090_cap1000" \
+  --output_dir "$HOME/lumbarseg_runs/audits/filter_sensitivity_001" \
+  --thresholds "0.55,0.90,1.0"
+```
+
+方向補正案は初期状態では未確認扱いです。人が確認済みに変更するまで、学習には使用できません。

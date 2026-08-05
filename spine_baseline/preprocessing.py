@@ -6,6 +6,15 @@ import pandas as pd
 import SimpleITK as sitk
 from tqdm import tqdm
 
+from spine_baseline.filtering import evaluate_slice_filter
+from spine_baseline.orientation import (
+    ORIENTATION_MODES,
+    OrientationTransform,
+    load_orientation_manifest,
+    resolve_orientation,
+    transform_pair,
+)
+
 
 def classify_sequence(filename: str) -> str:
     name = filename.lower()
@@ -62,17 +71,80 @@ def infer_sagittal_axis(array_shape: tuple[int, ...]) -> int:
     return int(np.argmin(array_shape))
 
 
-def iter_sagittal_slices(volume: np.ndarray, mask: np.ndarray):
-    axis = infer_sagittal_axis(volume.shape)
+def iter_sagittal_slices(volume: np.ndarray, mask: np.ndarray, sagittal_axis: int | None = None):
+    # ``None`` deliberately retains the original smallest-dimension heuristic.
+    # Callers opting into metadata or a reviewed manifest pass an explicit axis.
+    axis = infer_sagittal_axis(volume.shape) if sagittal_axis is None else sagittal_axis
     volume_slices = np.moveaxis(volume, axis, 0)
     mask_slices = np.moveaxis(mask, axis, 0)
     for index in range(volume_slices.shape[0]):
         yield index, axis, volume_slices[index], mask_slices[index]
 
 
+def transformed_resized_slice_spacing(
+    original_shape: tuple[int, int],
+    sagittal_axis: int,
+    axis_spacings: tuple[float, float, float],
+    transform: OrientationTransform,
+    target_height: int,
+    target_width: int,
+) -> np.ndarray:
+    """Calculate output spacing after the reviewed in-plane rotation."""
+    remaining_axes = [axis for axis in range(3) if axis != sagittal_axis]
+    row_spacing = axis_spacings[remaining_axes[0]]
+    col_spacing = axis_spacings[remaining_axes[1]]
+    transformed_shape = original_shape
+    if transform.rotate_k % 2:
+        # A quarter turn swaps both pixel dimensions and their physical spacing.
+        # Flips alter direction but not spacing, so they need no special case.
+        row_spacing, col_spacing = col_spacing, row_spacing
+        transformed_shape = (original_shape[1], original_shape[0])
+    return np.array(
+        [
+            row_spacing * (transformed_shape[0] / target_height),
+            col_spacing * (transformed_shape[1] / target_width),
+        ],
+        dtype=np.float32,
+    )
+
+
+def _saved_orientation_matches(
+    paths: list[Path],
+    *,
+    mode: str,
+    transform: OrientationTransform,
+    expected_shape: tuple[int, int],
+    series_id: str,
+) -> bool:
+    """Avoid reusing slices produced with a different orientation policy."""
+    for path in paths:
+        try:
+            with np.load(path) as sample:
+                array_key = "image" if path.parent.name == "images" else "mask"
+                if array_key not in sample or sample[array_key].shape != expected_shape:
+                    return False
+                if "series_id" not in sample or str(sample["series_id"].item()) != series_id:
+                    return False
+                if str(sample["orientation_mode"].item()) != mode:
+                    return False
+                if int(sample["sagittal_axis"].item()) != transform.sagittal_axis:
+                    return False
+                if int(sample["rotate_k"].item()) != transform.rotate_k:
+                    return False
+                if bool(sample["flip_lr"].item()) != transform.flip_lr:
+                    return False
+                if bool(sample["flip_ud"].item()) != transform.flip_ud:
+                    return False
+        except (KeyError, OSError, ValueError):
+            return False
+    return True
+
+
 def extract_slices(data_root: Path, output_root: Path, target_height: int, target_width: int,
                    sequences: str | None = None, force: bool = False,
-                   selected_files: set[str] | None = None) -> dict:
+                   selected_files: set[str] | None = None,
+                   orientation_mode: str = "legacy",
+                   orientation_manifest: Path | None = None) -> dict:
     image_dir = data_root / "images"
     mask_dir = data_root / "masks"
     output_img_dir = output_root / "images"
@@ -81,6 +153,25 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
     output_mask_dir.mkdir(parents=True, exist_ok=True)
 
     allowed_sequences = parse_sequences(sequences)
+    if orientation_mode not in ORIENTATION_MODES:
+        raise ValueError(
+            f"Unknown orientation_mode {orientation_mode!r}; expected one of {sorted(ORIENTATION_MODES)}"
+        )
+    if orientation_mode != "legacy" and force:
+        # Overwriting in place is unsafe when the corrected stack has fewer
+        # slices than the legacy stack: stale tail slices would survive and mix
+        # two orientation policies. Use a new output root for every corrected
+        # campaign instead of deleting or mutating a previous experiment.
+        raise ValueError(
+            "force reprocessing is disabled for orientation-aware modes; use a new output_root"
+        )
+    if orientation_mode == "manifest" and orientation_manifest is None:
+        raise ValueError("orientation_manifest is required when orientation_mode='manifest'")
+    manifest = (
+        load_orientation_manifest(orientation_manifest)
+        if orientation_mode == "manifest" and orientation_manifest is not None
+        else None
+    )
     mha_files = sorted(file.name for file in image_dir.glob("*.mha"))
     if allowed_sequences is not None:
         mha_files = [name for name in mha_files if classify_sequence(name) in allowed_sequences]
@@ -109,7 +200,17 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
         base_name = filename.removesuffix(".mha")
         requested_for_series = selected_by_series.get(base_name) if selected_by_series is not None else None
         existing = list(output_img_dir.glob(f"{base_name}_s*.npz"))
-        if existing and not force:
+        existing_masks = list(output_mask_dir.glob(f"{base_name}_s*.npz"))
+        if orientation_mode != "legacy" and {path.name for path in existing} != {
+            path.name for path in existing_masks
+        }:
+            raise RuntimeError(
+                f"{base_name}: existing image/mask slice sets differ; use a new output_root"
+            )
+        # Keep the baseline's early skip byte-for-byte compatible. New modes
+        # inspect saved provenance after resolving the requested orientation so
+        # they cannot accidentally reuse legacy slices from the same directory.
+        if existing and not force and orientation_mode == "legacy":
             if requested_for_series is None:
                 stats["skipped_existing"] += 1
                 stats["total_slices"] += len(existing)
@@ -122,28 +223,88 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
 
         try:
             image_itk = sitk.ReadImage(str(image_dir / filename))
+            mask_itk = sitk.ReadImage(str(mask_path))
             image = sitk.GetArrayFromImage(image_itk).astype(np.float32)
-            mask = sitk.GetArrayFromImage(sitk.ReadImage(str(mask_path))).astype(np.int16)
+            mask = sitk.GetArrayFromImage(mask_itk).astype(np.int16)
             if image.shape != mask.shape:
                 stats["errors"].append(f"{filename}: shape mismatch {image.shape} vs {mask.shape}")
                 continue
 
-            axis = infer_sagittal_axis(image.shape)
+            if orientation_mode != "legacy" and not np.allclose(
+                image_itk.GetDirection(), mask_itk.GetDirection(), atol=1e-6, rtol=0.0
+            ):
+                raise ValueError("image and mask direction metadata differ")
+            if orientation_mode != "legacy" and not np.allclose(
+                image_itk.GetSpacing(), mask_itk.GetSpacing(), atol=1e-6, rtol=0.0
+            ):
+                raise ValueError("image and mask spacing metadata differ")
+            if orientation_mode != "legacy" and not np.allclose(
+                image_itk.GetOrigin(), mask_itk.GetOrigin(), atol=1e-6, rtol=0.0
+            ):
+                raise ValueError("image and mask origin metadata differ")
+            transform = resolve_orientation(
+                mode=orientation_mode,
+                array_shape=image.shape,
+                direction=image_itk.GetDirection(),
+                series_id=base_name,
+                manifest=manifest,
+            )
+            axis = transform.sagittal_axis
+
+            if existing and not force and orientation_mode != "legacy":
+                relevant_existing = existing
+                if requested_for_series is not None:
+                    relevant_existing = [path for path in existing if path.name in requested_for_series]
+                provenance_paths = relevant_existing + [
+                    output_mask_dir / path.name for path in relevant_existing
+                ]
+                if relevant_existing and _saved_orientation_matches(
+                    provenance_paths,
+                    mode=orientation_mode,
+                    transform=transform,
+                    expected_shape=(target_height, target_width),
+                    series_id=base_name,
+                ):
+                    if requested_for_series is None or requested_for_series.issubset(
+                        {path.name for path in relevant_existing}
+                    ):
+                        stats["skipped_existing"] += 1
+                        stats["total_slices"] += len(relevant_existing)
+                        continue
+                if relevant_existing:
+                    # ``force=False`` historically promises not to overwrite
+                    # existing slices. A separate output root is preferable for
+                    # a new orientation campaign; ``force`` remains the explicit
+                    # opt-in when replacement is intentional.
+                    raise ValueError(
+                        "existing slices have different or incomplete orientation provenance; "
+                        "use a separate output root or force reprocessing"
+                    )
+
             sequence = classify_sequence(filename)
             spacings = array_axis_spacings(image_itk)
             stats["axes"][axis] = stats["axes"].get(axis, 0) + 1
 
-            for slice_index, _, image_slice, mask_slice in iter_sagittal_slices(image, mask):
+            for slice_index, _, image_slice, mask_slice in iter_sagittal_slices(image, mask, axis):
                 if image_slice.max() == image_slice.min():
                     continue
 
+                original_shape = image_slice.shape
+                image_slice, mask_slice = transform_pair(image_slice, mask_slice, transform)
                 mask_4class = map_labels(mask_slice)
                 slice_name = f"{base_name}_s{slice_index:03d}.npz"
                 if requested_for_series is not None and slice_name not in requested_for_series:
                     continue
                 image_resized = cv2.resize(image_slice, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
                 mask_resized = cv2.resize(mask_4class, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
-                spacing = resized_slice_spacing(image_slice.shape, axis, spacings, target_height, target_width)
+                spacing = transformed_resized_slice_spacing(
+                    original_shape,
+                    axis,
+                    spacings,
+                    transform,
+                    target_height,
+                    target_width,
+                )
 
                 np.savez_compressed(
                     output_img_dir / slice_name,
@@ -153,6 +314,12 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
                     series_id=base_name,
                     sagittal_axis=axis,
                     slice_index=slice_index,
+                    orientation_mode=orientation_mode,
+                    rotate_k=transform.rotate_k,
+                    flip_lr=transform.flip_lr,
+                    flip_ud=transform.flip_ud,
+                    orientation_reason=transform.reason,
+                    orientation_review_status=transform.review_status,
                 )
                 np.savez_compressed(
                     output_mask_dir / slice_name,
@@ -162,6 +329,12 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
                     series_id=base_name,
                     sagittal_axis=axis,
                     slice_index=slice_index,
+                    orientation_mode=orientation_mode,
+                    rotate_k=transform.rotate_k,
+                    flip_lr=transform.flip_lr,
+                    flip_ud=transform.flip_ud,
+                    orientation_reason=transform.reason,
+                    orientation_review_status=transform.review_status,
                 )
                 stats["total_slices"] += 1
 
@@ -178,21 +351,25 @@ def extract_slices(data_root: Path, output_root: Path, target_height: int, targe
                 f"Selected slices missing after extraction: {len(missing)}; first={missing[:5]}"
             )
 
+    if orientation_mode != "legacy" and stats["errors"]:
+        # A paper-aligned orientation run must be all-or-nothing. Continuing
+        # after one series fails could silently mix legacy and corrected slices
+        # in the same training cohort, making the resulting score uninterpretable.
+        preview = "; ".join(stats["errors"][:5])
+        suffix = "" if len(stats["errors"]) <= 5 else f"; and {len(stats['errors']) - 5} more"
+        raise RuntimeError(
+            f"Orientation-aware extraction failed for {len(stats['errors'])} item(s): "
+            f"{preview}{suffix}"
+        )
+    if orientation_mode != "legacy":
+        all_images = {path.name for path in output_img_dir.glob("*.npz")}
+        all_masks = {path.name for path in output_mask_dir.glob("*.npz")}
+        if all_images != all_masks:
+            raise RuntimeError(
+                "Orientation-aware output has different image/mask file sets; use a new output_root"
+            )
+
     return stats
-
-
-def foreground_class_fractions(mask: np.ndarray) -> dict[int, float]:
-    foreground = mask[mask > 0]
-    if foreground.size == 0:
-        return {}
-    unique, counts = np.unique(foreground, return_counts=True)
-    total = counts.sum()
-    return {int(label): float(count / total) for label, count in zip(unique, counts)}
-
-
-def dominant_foreground_fraction(mask: np.ndarray) -> float:
-    fractions = foreground_class_fractions(mask)
-    return max(fractions.values()) if fractions else 1.0
 
 
 def class_fractions(mask: np.ndarray, num_classes: int = 4) -> dict[int, float]:
@@ -233,16 +410,15 @@ def filter_slices(
         except Exception as exc:
             corrupt_files.append(f"{mask_file.name}: {exc}")
             continue
-        unique_classes = np.unique(mask)
-        if len(unique_classes) < min_classes:
+        decision = evaluate_slice_filter(mask, min_classes, imbalance_threshold)
+        if decision.reason == "fewer_than_min_classes":
             removed_class_count += 1
             continue
-
-        max_foreground_fraction = dominant_foreground_fraction(mask)
-        if max_foreground_fraction > imbalance_threshold:
+        if decision.reason == "dominant_foreground_above_threshold":
             removed_imbalance += 1
             continue
 
+        max_foreground_fraction = decision.dominant_foreground_fraction
         fractions = class_fractions(mask)
         sequence = classify_sequence(get_series_id(mask_file.name))
         eligible_files.append(mask_file.name)

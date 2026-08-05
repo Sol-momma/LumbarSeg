@@ -6,8 +6,10 @@ import tensorflow as tf
 from arguments import add_data_args, add_model_args, add_optimization_args, get_param_groups
 from spine_baseline.file_lists import read_file_list
 from spine_baseline.losses import combined_loss
-from spine_baseline.metrics import dice_coefficient, evaluate_classwise, mean_iou
+from spine_baseline.metrics import dice_coefficient, evaluate_classwise_with_aggregations, mean_iou
 from spine_baseline.preprocessing import filter_slices, split_train_val
+
+
 def main() -> None:
     parser = ArgumentParser(description="Evaluate a trained baseline model.")
     add_data_args(parser)
@@ -52,7 +54,7 @@ def main() -> None:
         },
         compile=False,
     )
-    results = evaluate_classwise(
+    results, aggregation_results = evaluate_classwise_with_aggregations(
         model,
         val_files,
         data.output_root,
@@ -62,8 +64,14 @@ def main() -> None:
     )
     metrics_path = data.output_root / "validation_metrics.csv"
     results.to_csv(metrics_path, index=False)
+    # Keep the historical CSV byte-shape compatible for goal checks and place
+    # alternative aggregation definitions in an explicitly separate artifact.
+    aggregations_path = data.output_root / "validation_metrics_aggregations.csv"
+    aggregation_results.to_csv(aggregations_path, index=False)
     print(results)
     print(f"Saved metrics to: {metrics_path}")
+    print(aggregation_results)
+    print(f"Saved metric aggregations to: {aggregations_path}")
 
 
 if __name__ == "__main__":

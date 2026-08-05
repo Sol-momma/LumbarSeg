@@ -14,6 +14,8 @@ class DataParams:
     imbalance_threshold: float
     max_slices_per_sequence: int | None
     force_reprocess: bool
+    orientation_mode: str
+    orientation_manifest: Path | None
 
 
 @dataclass
@@ -66,6 +68,21 @@ def add_data_args(parser: ArgumentParser) -> None:
         help="Maximum kept slices per MRI sequence after filtering. Use 0 to disable the paper's 1000-slice cap.",
     )
     group.add_argument("--force_reprocess", action="store_true")
+    group.add_argument(
+        "--orientation_mode",
+        choices=("legacy", "metadata", "manifest"),
+        default="legacy",
+        help=(
+            "Sagittal orientation policy. 'legacy' preserves the smallest-axis baseline; "
+            "'metadata' uses SimpleITK direction; 'manifest' requires reviewed per-series transforms."
+        ),
+    )
+    group.add_argument(
+        "--orientation_manifest",
+        type=Path,
+        default=None,
+        help="Reviewed orientation CSV required by --orientation_mode manifest.",
+    )
 
 
 def add_model_args(parser: ArgumentParser) -> None:
@@ -103,6 +120,8 @@ def get_data_params(args: Namespace) -> DataParams:
         imbalance_threshold=args.imbalance_threshold,
         max_slices_per_sequence=args.max_slices_per_sequence if args.max_slices_per_sequence > 0 else None,
         force_reprocess=args.force_reprocess,
+        orientation_mode=args.orientation_mode,
+        orientation_manifest=args.orientation_manifest,
     )
 
 

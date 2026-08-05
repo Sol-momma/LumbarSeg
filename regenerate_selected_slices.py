@@ -37,6 +37,12 @@ def main() -> None:
     parser.add_argument("--target_height", type=int, default=512)
     parser.add_argument("--target_width", type=int, default=640)
     parser.add_argument("--force_reprocess", action="store_true")
+    parser.add_argument(
+        "--orientation_mode",
+        choices=("legacy", "metadata", "manifest"),
+        default="legacy",
+    )
+    parser.add_argument("--orientation_manifest", type=Path, default=None)
     args = parser.parse_args()
 
     source_files = read_file_list(args.file_list)
@@ -51,6 +57,8 @@ def main() -> None:
         target_width=args.target_width,
         force=args.force_reprocess,
         selected_files=set(selected_files),
+        orientation_mode=args.orientation_mode,
+        orientation_manifest=args.orientation_manifest,
     )
 
     image_names = {path.name for path in (args.output_root / "images").glob("*.npz")}

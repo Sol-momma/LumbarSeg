@@ -11,6 +11,7 @@ Usage:
 Presets:
   all_4cls090_cap1000        T1/T2/T2_SPACE combined, relaxed imbalance, 1000 cap per sequence.
   t2_space_4cls090_cap1000   T2 SPACE only, same condition as the 2026-07-11 recorded run.
+  t2_space_4cls055_cap1000   T2 SPACE only, paper-interpreted 55% imbalance threshold.
   t2_4cls090_cap1000         T2 only, diagnostic comparison against the earlier relaxed T2 run.
   paper_strict_all_4cls055   T1/T2/T2_SPACE combined, paper-style strict imbalance threshold.
 
@@ -27,6 +28,8 @@ Environment overrides:
   EVAL_FILE_LIST=/path/to/fixed_validation_files.txt
   EVAL_COHORT_MANIFEST=/path/to/fixed_validation_cohort.tsv
   ALLOW_DIRTY_RUN=0|1
+  ORIENTATION_MODE=legacy|metadata|manifest
+  ORIENTATION_MANIFEST=/path/to/reviewed_orientation.csv
 EOF
 }
 
@@ -45,6 +48,8 @@ seed="${SEED:-42}"
 force_reprocess="${FORCE_REPROCESS:-0}"
 record_to_docs="${RECORD_TO_DOCS:-1}"
 allow_dirty_run="${ALLOW_DIRTY_RUN:-0}"
+orientation_mode="${ORIENTATION_MODE:-legacy}"
+orientation_manifest="${ORIENTATION_MANIFEST:-}"
 
 sequences=""
 min_classes=4
@@ -61,6 +66,11 @@ case "$preset" in
   t2_space_4cls090_cap1000)
     sequences="T2_SPACE"
     output_name="t2_space_reproduction_4cls090_cap1000"
+    ;;
+  t2_space_4cls055_cap1000)
+    sequences="T2_SPACE"
+    imbalance_threshold="0.55"
+    output_name="t2_space_reproduction_4cls055_cap1000"
     ;;
   t2_4cls090_cap1000)
     sequences="T2"
@@ -87,6 +97,20 @@ output_root="${OUTPUT_ROOT:-${run_root}/${output_name}}"
 eval_file_list_override="${EVAL_FILE_LIST:-}"
 eval_file_list="${eval_file_list_override:-$output_root/validation_files.txt}"
 eval_cohort_manifest="${EVAL_COHORT_MANIFEST:-}"
+
+case "$orientation_mode" in
+  legacy|metadata) ;;
+  manifest)
+    if [[ -z "$orientation_manifest" || ! -f "$orientation_manifest" ]]; then
+      echo "ORIENTATION_MANIFEST must name an existing reviewed CSV in manifest mode." >&2
+      exit 2
+    fi
+    ;;
+  *)
+    echo "Unknown ORIENTATION_MODE: $orientation_mode" >&2
+    exit 2
+    ;;
+esac
 
 # A result tied to uncommitted code cannot be recreated from its Git revision.
 # Keep an explicit escape hatch for local debugging, but reject it by default.
@@ -117,8 +141,14 @@ platform="$(uname -sr)"
   printf 'output_root\t%s\n' "$output_root"
   printf 'min_classes\t%s\n' "$min_classes"
   printf 'imbalance_threshold\t%s\n' "$imbalance_threshold"
+  printf 'imbalance_mode\t%s\n' "foreground_max_fraction"
   printf 'max_slices_per_sequence\t%s\n' "$max_slices_per_sequence"
   printf 'batch_size\t%s\n' "$batch_size"
+  printf 'orientation_mode\t%s\n' "$orientation_mode"
+  printf 'orientation_manifest\t%s\n' "$orientation_manifest"
+  if [[ -n "$orientation_manifest" ]]; then
+    printf 'orientation_manifest_sha256\t%s\n' "$(sha256sum "$orientation_manifest" | awk '{print $1}')"
+  fi
   printf 'epochs\t%s\n' "$epochs"
   printf 'seed\t%s\n' "$seed"
   printf 'evaluation_file_list\t%s\n' "$eval_file_list"
@@ -142,6 +172,11 @@ fi
 validation_args=()
 if [[ -n "$eval_file_list_override" ]]; then
   validation_args=(--validation_file_list "$eval_file_list")
+fi
+
+orientation_args=(--orientation_mode "$orientation_mode")
+if [[ -n "$orientation_manifest" ]]; then
+  orientation_args+=(--orientation_manifest "$orientation_manifest")
 fi
 
 echo "Preset: $preset"
@@ -183,6 +218,7 @@ echo
     --min_classes "$min_classes" \
     --imbalance_threshold "$imbalance_threshold" \
     --max_slices_per_sequence "$max_slices_per_sequence" \
+    "${orientation_args[@]}" \
     "${validation_args[@]}" \
     "${force_args[@]}"
 

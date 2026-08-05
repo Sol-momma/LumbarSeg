@@ -18,6 +18,8 @@ def main() -> None:
         target_width=data.target_width,
         sequences=data.sequences,
         force=data.force_reprocess,
+        orientation_mode=data.orientation_mode,
+        orientation_manifest=data.orientation_manifest,
     )
     kept_files, filter_stats = filter_slices(
         data.output_root,
