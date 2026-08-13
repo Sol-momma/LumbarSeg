@@ -6,6 +6,10 @@ import tensorflow as tf
 from tensorflow import keras
 
 from arguments import add_data_args, add_model_args, add_optimization_args, get_param_groups
+from spine_baseline.class_weights import (
+    derive_focal_class_weights,
+    write_focal_class_weight_evidence,
+)
 from spine_baseline.dataset import create_dataset
 from spine_baseline.file_lists import (
     exclude_files,
@@ -163,11 +167,28 @@ def main() -> None:
     write_file_list(run_output_root / "validation_files.txt", val_files)
     write_file_list(run_output_root / "unmatched_files.txt", unmatched)
 
+    focal_class_weights, focal_class_counts = derive_focal_class_weights(
+        opt.focal_class_weight_mode,
+        train_files,
+        data.output_root,
+        model_params.num_classes,
+    )
+    write_focal_class_weight_evidence(
+        run_output_root / "focal_class_weights.tsv",
+        opt.focal_class_weight_mode,
+        focal_class_counts,
+        focal_class_weights,
+    )
+
     print("Extraction stats:", extract_stats)
     print("Filtering stats:", filter_stats)
     print(f"Train slices: {len(train_files)}")
     print(f"Validation slices: {len(val_files)}")
     print(f"Unmatched slices: {len(unmatched)}")
+    print(
+        "Focal class weights:",
+        "equal" if focal_class_weights is None else focal_class_weights.tolist(),
+    )
 
     train_ds = create_dataset(
         train_files, data.output_root, data.target_height, data.target_width,
@@ -186,7 +207,11 @@ def main() -> None:
     )
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=opt.learning_rate),
-        loss=combined_loss(alpha=opt.focal_weight, gamma=opt.focal_gamma),
+        loss=combined_loss(
+            alpha=opt.focal_weight,
+            gamma=opt.focal_gamma,
+            class_weights=focal_class_weights,
+        ),
         metrics=["accuracy", mean_iou(model_params.num_classes), dice_coefficient(model_params.num_classes)],
     )
 

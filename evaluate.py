@@ -17,6 +17,15 @@ def main() -> None:
     add_optimization_args(parser)
     parser.add_argument("--model_path", required=True, help="Path to a .keras model.")
     parser.add_argument(
+        "--evaluation_output_root",
+        type=Path,
+        default=None,
+        help=(
+            "Optional directory for evaluation CSVs. Defaults to output_root for backward "
+            "compatibility; set this when output_root is a shared read-only processed cache."
+        ),
+    )
+    parser.add_argument(
         "--file_list",
         type=Path,
         default=None,
@@ -62,11 +71,13 @@ def main() -> None:
         limit=args.limit,
         nsd_tolerance=args.nsd_tolerance,
     )
-    metrics_path = data.output_root / "validation_metrics.csv"
+    evaluation_output_root = args.evaluation_output_root or data.output_root
+    evaluation_output_root.mkdir(parents=True, exist_ok=True)
+    metrics_path = evaluation_output_root / "validation_metrics.csv"
     results.to_csv(metrics_path, index=False)
     # Keep the historical CSV byte-shape compatible for goal checks and place
     # alternative aggregation definitions in an explicitly separate artifact.
-    aggregations_path = data.output_root / "validation_metrics_aggregations.csv"
+    aggregations_path = evaluation_output_root / "validation_metrics_aggregations.csv"
     aggregation_results.to_csv(aggregations_path, index=False)
     print(results)
     print(f"Saved metrics to: {metrics_path}")

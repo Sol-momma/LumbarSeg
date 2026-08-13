@@ -33,6 +33,7 @@ class OptimizationParams:
     learning_rate: float
     focal_weight: float
     focal_gamma: float
+    focal_class_weight_mode: str
     patience: int
     seed: int
 
@@ -105,6 +106,15 @@ def add_optimization_args(parser: ArgumentParser) -> None:
     group.add_argument("--learning_rate", type=float, default=1e-4)
     group.add_argument("--focal_weight", type=float, default=0.6)
     group.add_argument("--focal_gamma", type=float, default=4.0)
+    group.add_argument(
+        "--focal_class_weight_mode",
+        choices=("none", "inverse_sqrt_train"),
+        default="none",
+        help=(
+            "Optional focal-loss class weighting. inverse_sqrt_train derives stable weights "
+            "from training masks only and records them in the run output."
+        ),
+    )
     group.add_argument("--patience", type=int, default=15)
     group.add_argument("--seed", type=int, default=42)
 
@@ -139,6 +149,7 @@ def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, Optimiza
         learning_rate=args.learning_rate,
         focal_weight=args.focal_weight,
         focal_gamma=args.focal_gamma,
+        focal_class_weight_mode=args.focal_class_weight_mode,
         patience=args.patience,
         seed=args.seed,
     )
