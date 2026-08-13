@@ -6,7 +6,7 @@ import pandas as pd
 import SimpleITK as sitk
 from tqdm import tqdm
 
-from spine_baseline.filtering import evaluate_slice_filter
+from spine_baseline.filtering import FILTER_DEFINITION, evaluate_slice_filter
 from spine_baseline.orientation import (
     ORIENTATION_MODES,
     OrientationTransform,
@@ -465,6 +465,9 @@ def filter_slices(
         "removed_class_count": removed_class_count,
         "removed_imbalance": removed_imbalance,
         "imbalance_basis": "foreground_classes_only",
+        # Keep the caveat machine-readable so a successful Dice score cannot be
+        # relabelled later as an exact paper reproduction by reading only logs.
+        "filter_definition": FILTER_DEFINITION,
         "removed_sequence_cap": removed_sequence_cap,
         "corrupt_files": len(corrupt_files),
         "corrupt_file_errors": corrupt_files,

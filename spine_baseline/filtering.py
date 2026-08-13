@@ -3,16 +3,26 @@ from dataclasses import dataclass
 import numpy as np
 
 
+# This identifier is written beside every audit and reproduction run.  It is
+# intentionally named as a proxy because the published paper and preprint give
+# mutually inconsistent formulae, and the public author code omits the 55% gate.
+# Renaming it to ``paper_filter_exact`` requires author-provided filtering code
+# or the exact selected-slice manifest, not merely a matching threshold value.
+FILTER_DEFINITION = "paper_filter_proxy_dominant_foreground_fraction"
+
+
 @dataclass(frozen=True)
 class SliceFilterDecision:
     """Explain one slice-selection decision without changing experiment files.
 
-    The paper describes a 55% threshold but its highest/lowest formula is not
-    compatible with a percentage threshold.  This project therefore records the
-    chosen interpretation explicitly: the largest foreground class share among
-    vertebrae, canal, and IVD pixels.  Keeping the calculation in this pure
-    function prevents the audit report and the training pipeline from silently
-    using different definitions.
+    The paper's preprint and published formulae do not uniquely define the 55%
+    gate.  This project therefore records its operational proxy explicitly: the
+    largest foreground class share among vertebrae, canal, and IVD pixels.  The
+    proxy reproduces the keep/keep/remove decisions of all three example masks in
+    the paper's public source archive, but it must not be reported as an exact
+    reconstruction of an unavailable author-side filtering script.  Keeping the
+    calculation in this pure function prevents the audit report and the training
+    pipeline from silently using different definitions.
     """
 
     keep: bool

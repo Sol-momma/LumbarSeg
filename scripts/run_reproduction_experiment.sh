@@ -141,6 +141,10 @@ platform="$(uname -sr)"
   printf 'output_root\t%s\n' "$output_root"
   printf 'min_classes\t%s\n' "$min_classes"
   printf 'imbalance_threshold\t%s\n' "$imbalance_threshold"
+  # The public paper versions disagree on the ratio formula and the author code
+  # has no 55% removal step. Persist "proxy" in the evidence instead of allowing
+  # this experiment to be mistaken for an exact reconstruction later.
+  printf 'filter_definition\t%s\n' "paper_filter_proxy_dominant_foreground_fraction"
   printf 'imbalance_mode\t%s\n' "foreground_max_fraction"
   printf 'max_slices_per_sequence\t%s\n' "$max_slices_per_sequence"
   printf 'batch_size\t%s\n' "$batch_size"

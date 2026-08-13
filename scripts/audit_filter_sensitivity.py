@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from spine_baseline.filtering import evaluate_slice_filter
+from spine_baseline.filtering import FILTER_DEFINITION, evaluate_slice_filter
 
 
 def classify_sequence(filename: str) -> str:
@@ -90,6 +90,7 @@ def audit_threshold(
         decision = evaluate_slice_filter(mask, min_classes, threshold)
         sequence = classify_sequence(get_series_id(mask_path.name))
         decisions.append({
+            "filter_definition": FILTER_DEFINITION,
             "threshold": threshold,
             "file": mask_path.name,
             "sequence": sequence,
@@ -124,6 +125,7 @@ def audit_threshold(
             name for name in unmatched_files if classify_sequence(get_series_id(name)) == sequence
         ]
         summary.append({
+            "filter_definition": FILTER_DEFINITION,
             "threshold": threshold,
             "sequence": sequence,
             "before_filtering": len(scoped),

@@ -35,6 +35,8 @@ class FilterSensitivityAuditTests(unittest.TestCase):
             )
 
             self.assertTrue(decisions[0]["selected_after_cap"])
+            self.assertIn("proxy", decisions[0]["filter_definition"])
+            self.assertIn("proxy", summary[-1]["filter_definition"])
             self.assertEqual(summary[-1]["train_slices"], 1)
             self.assertFalse((processed_root / "filtered_files.txt").exists())
 

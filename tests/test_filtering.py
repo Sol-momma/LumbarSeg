@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from spine_baseline.filtering import evaluate_slice_filter
+from spine_baseline.filtering import FILTER_DEFINITION, evaluate_slice_filter
 
 
 class SliceFilterDecisionTests(unittest.TestCase):
@@ -41,6 +41,32 @@ class SliceFilterDecisionTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "within"):
             evaluate_slice_filter(mask, min_classes=4, imbalance_threshold=1.1)
+
+    def test_public_paper_examples_match_proxy_decisions(self):
+        # These are the exact RGB color counts in Figure 5(a-c) from the public
+        # arXiv source package.  Locking only the published keep/remove examples
+        # is deliberate: they support this proxy but cannot resolve the paper's
+        # contradictory ratio formula or prove an exact author-side algorithm.
+        examples = [
+            ((282915, 17800, 13269, 3456), True),
+            ((288265, 14582, 11239, 3354), True),
+            ((302411, 11488, 934, 2607), False),
+        ]
+
+        self.assertIn("proxy", FILTER_DEFINITION)
+        for counts, expected_keep in examples:
+            with self.subTest(counts=counts):
+                background, vertebrae, canal, ivds = counts
+                mask = np.concatenate([
+                    np.full(background, 0, dtype=np.uint8),
+                    np.full(vertebrae, 1, dtype=np.uint8),
+                    np.full(canal, 2, dtype=np.uint8),
+                    np.full(ivds, 3, dtype=np.uint8),
+                ])
+
+                decision = evaluate_slice_filter(mask, min_classes=4, imbalance_threshold=0.55)
+
+                self.assertEqual(decision.keep, expected_keep)
 
 
 if __name__ == "__main__":
