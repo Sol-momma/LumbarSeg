@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
+from time import perf_counter
 
 import matplotlib
 
@@ -17,6 +18,7 @@ from spine_baseline.dataset import load_sample
 from spine_baseline.losses import combined_loss
 from spine_baseline.metrics import dice_coefficient, mean_iou
 from spine_baseline.preprocessing import classify_sequence, filter_slices, get_series_id, split_train_val
+from spine_baseline.runtime_metrics import build_runtime_report, write_runtime_report
 
 
 WORST_CASE_METRICS = (
@@ -135,21 +137,31 @@ def score_files(
     output_root: Path,
     num_classes: int,
     batch_size: int,
+    stage_seconds: dict[str, float] | None = None,
 ) -> list[dict]:
     """Score every requested slice in batches while keeping memory bounded."""
     rows = []
+    timings = stage_seconds if stage_seconds is not None else {}
     safe_batch_size = max(1, batch_size)
     for start in range(0, len(files), safe_batch_size):
         batch_files = files[start : start + safe_batch_size]
+        stage_start = perf_counter()
         loaded = [load_sample(filename, output_root, num_classes) for filename in batch_files]
         images = np.stack([sample[0] for sample in loaded])
         true_masks = np.argmax(np.stack([sample[1] for sample in loaded]), axis=-1).astype(np.uint8)
+        timings["score_input_load"] = timings.get("score_input_load", 0.0) + (perf_counter() - stage_start)
+
+        stage_start = perf_counter()
         predictions = model.predict(images, verbose=0)
+        timings["score_inference"] = timings.get("score_inference", 0.0) + (perf_counter() - stage_start)
+
+        stage_start = perf_counter()
         pred_masks = np.argmax(predictions, axis=-1).astype(np.uint8)
         rows.extend(
             score_prediction(filename, pred_mask, true_mask, num_classes)
             for filename, pred_mask, true_mask in zip(batch_files, pred_masks, true_masks)
         )
+        timings["score_postprocess"] = timings.get("score_postprocess", 0.0) + (perf_counter() - stage_start)
         print(f"Scored {min(start + safe_batch_size, len(files))}/{len(files)} slices", flush=True)
     return rows
 
@@ -195,20 +207,32 @@ def render_rows(
     output_root: Path,
     output_dir: Path,
     num_classes: int,
+    stage_seconds: dict[str, float] | None = None,
 ) -> list[dict]:
     """Render only selected slices, avoiding hundreds of unnecessary PNGs."""
+    timings = stage_seconds if stage_seconds is not None else {}
     output_dir.mkdir(parents=True, exist_ok=True)
     rendered = []
     for index, row in enumerate(rows):
         filename = str(row["file"])
+        stage_start = perf_counter()
         image, mask_onehot = load_sample(filename, output_root, num_classes)
+        timings["render_input_load"] = timings.get("render_input_load", 0.0) + (perf_counter() - stage_start)
+
+        stage_start = perf_counter()
         pred = model.predict(image[np.newaxis, ...], verbose=0)[0]
+        timings["render_inference"] = timings.get("render_inference", 0.0) + (perf_counter() - stage_start)
+
+        stage_start = perf_counter()
         pred_mask = np.argmax(pred, axis=-1).astype(np.uint8)
         true_mask = np.argmax(mask_onehot, axis=-1).astype(np.uint8)
         scores = dice_per_class(pred_mask, true_mask, num_classes)
         output_path = output_dir / f"{index:03d}_{Path(filename).stem}.png"
         plot_prediction(image[..., 0], true_mask, pred_mask, filename, scores, output_path)
         rendered.append({**row, "png": str(output_path.relative_to(output_dir.parent))})
+        timings["render_and_png_write"] = timings.get("render_and_png_write", 0.0) + (
+            perf_counter() - stage_start
+        )
     return rendered
 
 
@@ -222,6 +246,8 @@ def resolve_split(split: str, data_root: Path, kept_files: list[str]) -> list[st
 
 
 def main() -> None:
+    pipeline_start = perf_counter()
+    stage_seconds: dict[str, float] = {}
     parser = ArgumentParser(description="Render qualitative prediction panels for a trained baseline model.")
     add_data_args(parser)
     add_model_args(parser)
@@ -256,9 +282,16 @@ def main() -> None:
         default=0,
         help="Render this many worst slices for mean Dice and each foreground class in one run.",
     )
+    parser.add_argument(
+        "--runtime_metrics_path",
+        type=Path,
+        default=None,
+        help="Optional JSON path for stage timings. Defaults to prediction_output_dir/runtime_metrics.json.",
+    )
     args = parser.parse_args()
     data, model_params, opt = get_param_groups(args)
 
+    stage_start = perf_counter()
     output_dir = args.prediction_output_dir or (data.output_root / "predictions")
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -286,7 +319,9 @@ def main() -> None:
             f"Processed image/mask pairs are missing for {len(missing_processed)} selected slices; "
             f"first={missing_processed[:5]}"
         )
+    stage_seconds["input_selection"] = perf_counter() - stage_start
 
+    stage_start = perf_counter()
     model = tf.keras.models.load_model(
         args.model_path,
         custom_objects={
@@ -296,6 +331,7 @@ def main() -> None:
         },
         compile=False,
     )
+    stage_seconds["model_load"] = perf_counter() - stage_start
 
     score_all = args.selection == "worst" or args.worst_per_metric > 0
     files_to_score = split_files if score_all else choose_files(
@@ -311,9 +347,12 @@ def main() -> None:
         data.output_root,
         model_params.num_classes,
         opt.batch_size,
+        stage_seconds,
     )
     summary_path = output_dir / "prediction_summary.csv"
+    stage_start = perf_counter()
     pd.DataFrame(rows).to_csv(summary_path, index=False)
+    stage_seconds["score_summary_write"] = perf_counter() - stage_start
 
     rendered_rows = []
     if args.worst_per_metric > 0:
@@ -326,6 +365,7 @@ def main() -> None:
                 data.output_root,
                 category_dir,
                 model_params.num_classes,
+                stage_seconds,
             )
             rendered_rows.extend(
                 {"rank_metric": metric, "rank": rank, **row}
@@ -343,13 +383,36 @@ def main() -> None:
             data.output_root,
             output_dir,
             model_params.num_classes,
+            stage_seconds,
         )
 
     worst_summary_path = output_dir / "worst_case_summary.csv"
+    stage_start = perf_counter()
     pd.DataFrame(rendered_rows).to_csv(worst_summary_path, index=False)
+    stage_seconds["ranking_summary_write"] = perf_counter() - stage_start
+
+    total_seconds = perf_counter() - pipeline_start
+    runtime_metrics_path = args.runtime_metrics_path or (output_dir / "runtime_metrics.json")
+    gpu_devices = [device.name for device in tf.config.list_physical_devices("GPU")]
+    runtime_report = build_runtime_report(
+        stage_seconds=stage_seconds,
+        total_seconds=total_seconds,
+        input_files=files_to_score,
+        scored_slice_count=len(rows),
+        rendered_panel_count=len(rendered_rows),
+        batch_size=opt.batch_size,
+        target_height=data.target_height,
+        target_width=data.target_width,
+        split=args.split,
+        model_path=Path(args.model_path),
+        processed_root=data.output_root,
+        gpu_devices=gpu_devices,
+    )
+    write_runtime_report(runtime_metrics_path, runtime_report)
     print(f"Rendered {len(rendered_rows)} prediction panels to: {output_dir}")
     print(f"Saved per-slice Dice summary to: {summary_path}")
     print(f"Saved rendered-case ranking to: {worst_summary_path}")
+    print(f"Saved runtime metrics to: {runtime_metrics_path}")
 
 
 if __name__ == "__main__":

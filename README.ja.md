@@ -131,6 +131,8 @@ python visualize_predictions.py \
 
 `prediction_summary.csv` には検証データ全件のDiceと正解・予測領域の画素数が保存されます。低精度画像は `worst_dice_mean/`、`worst_dice_vertebrae/`、`worst_dice_spinal_canal/`、`worst_dice_ivds/` に分かれ、順位は `worst_case_summary.csv` で確認できます。
 
+同じ出力先の `runtime_metrics.json` には、モデル読み込み、前処理済みNPZの読み込み、推論、PNG作成・保存などの所要時間が段階別に記録されます。この計測は**前処理済みスライスから確認用PNGまで**が対象です。元のMHA読み込み、MHAからNPZへの前処理、医療システムとのデータ転送は含まれないため、MRI入力からの完全な実運用時間とは区別してください。
+
 ## Quick Facts
 
 | Feature | LumbarSeg |
