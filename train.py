@@ -17,7 +17,7 @@ from spine_baseline.file_lists import (
     validate_disjoint_cohorts,
     validate_slice_files,
 )
-from spine_baseline.losses import combined_loss
+from spine_baseline.losses import combined_loss, validate_loss_configuration, write_loss_config
 from spine_baseline.metrics import dice_coefficient, mean_iou
 from spine_baseline.model import build_modified_unet
 from spine_baseline.preprocessing import extract_slices, filter_slices, split_train_val
@@ -67,6 +67,12 @@ def main() -> None:
     )
     args = parser.parse_args()
     data, model_params, opt = get_param_groups(args)
+    # Fail before reading or writing experiment data when the requested loss
+    # would combine two causal changes or use an invalid negative boost.
+    validate_loss_configuration(
+        opt.focal_class_weight_mode,
+        opt.focal_canal_boundary_boost,
+    )
 
     np.random.seed(opt.seed)
     tf.random.set_seed(opt.seed)
@@ -179,6 +185,13 @@ def main() -> None:
         focal_class_counts,
         focal_class_weights,
     )
+    write_loss_config(
+        run_output_root / "loss_config.tsv",
+        focal_weight=opt.focal_weight,
+        focal_gamma=opt.focal_gamma,
+        focal_class_weight_mode=opt.focal_class_weight_mode,
+        focal_canal_boundary_boost=opt.focal_canal_boundary_boost,
+    )
 
     print("Extraction stats:", extract_stats)
     print("Filtering stats:", filter_stats)
@@ -189,6 +202,7 @@ def main() -> None:
         "Focal class weights:",
         "equal" if focal_class_weights is None else focal_class_weights.tolist(),
     )
+    print("Focal canal boundary boost:", opt.focal_canal_boundary_boost)
 
     train_ds = create_dataset(
         train_files, data.output_root, data.target_height, data.target_width,
@@ -211,6 +225,7 @@ def main() -> None:
             alpha=opt.focal_weight,
             gamma=opt.focal_gamma,
             class_weights=focal_class_weights,
+            canal_boundary_boost=opt.focal_canal_boundary_boost,
         ),
         metrics=["accuracy", mean_iou(model_params.num_classes), dice_coefficient(model_params.num_classes)],
     )

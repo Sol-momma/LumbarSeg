@@ -34,6 +34,7 @@ class OptimizationParams:
     focal_weight: float
     focal_gamma: float
     focal_class_weight_mode: str
+    focal_canal_boundary_boost: float
     patience: int
     seed: int
 
@@ -115,6 +116,15 @@ def add_optimization_args(parser: ArgumentParser) -> None:
             "from training masks only and records them in the run output."
         ),
     )
+    group.add_argument(
+        "--focal_canal_boundary_boost",
+        type=float,
+        default=0.0,
+        help=(
+            "Relative focal-loss boost for the ground-truth Spinal Canal boundary. "
+            "Zero preserves the baseline; 2.0 makes boundary pixels three times the normal weight."
+        ),
+    )
     group.add_argument("--patience", type=int, default=15)
     group.add_argument("--seed", type=int, default=42)
 
@@ -150,6 +160,7 @@ def get_param_groups(args: Namespace) -> tuple[DataParams, ModelParams, Optimiza
         focal_weight=args.focal_weight,
         focal_gamma=args.focal_gamma,
         focal_class_weight_mode=args.focal_class_weight_mode,
+        focal_canal_boundary_boost=args.focal_canal_boundary_boost,
         patience=args.patience,
         seed=args.seed,
     )

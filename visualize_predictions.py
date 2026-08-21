@@ -325,7 +325,11 @@ def main() -> None:
     model = tf.keras.models.load_model(
         args.model_path,
         custom_objects={
-            "loss_fn": combined_loss(alpha=opt.focal_weight, gamma=opt.focal_gamma),
+            "loss_fn": combined_loss(
+                alpha=opt.focal_weight,
+                gamma=opt.focal_gamma,
+                canal_boundary_boost=opt.focal_canal_boundary_boost,
+            ),
             "mean_iou": mean_iou(model_params.num_classes),
             "dice_coefficient": dice_coefficient(model_params.num_classes),
         },
