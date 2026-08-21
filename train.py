@@ -219,6 +219,11 @@ def main() -> None:
         dropout_rate=model_params.dropout_rate,
         leaky_relu_alpha=model_params.leaky_relu_alpha,
     )
+    # Keras' automatic XLA path needs more than the available 8 GiB when the
+    # morphological boundary term is present.  Disable only compilation of
+    # that candidate graph; the baseline keeps its established "auto" mode and
+    # the loss values and gradients are otherwise unchanged.
+    jit_compile = False if opt.focal_canal_boundary_boost > 0.0 else "auto"
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=opt.learning_rate),
         loss=combined_loss(
@@ -228,6 +233,7 @@ def main() -> None:
             canal_boundary_boost=opt.focal_canal_boundary_boost,
         ),
         metrics=["accuracy", mean_iou(model_params.num_classes), dice_coefficient(model_params.num_classes)],
+        jit_compile=jit_compile,
     )
 
     checkpoint_dir = prepare_output(run_output_root)

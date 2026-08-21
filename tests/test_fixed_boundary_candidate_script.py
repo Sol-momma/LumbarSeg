@@ -32,6 +32,13 @@ def test_candidate_changes_only_the_boundary_loss_and_requires_gpu():
     assert 'SEED="${SEED:-42}"' in script
 
 
+def test_training_disables_xla_only_for_the_boundary_candidate():
+    train_source = (SCRIPT_PATH.parents[1] / "train.py").read_text(encoding="utf-8")
+
+    assert 'jit_compile = False if opt.focal_canal_boundary_boost > 0.0 else "auto"' in train_source
+    assert "jit_compile=jit_compile" in train_source
+
+
 def test_candidate_evaluates_and_records_terminal_status():
     script = SCRIPT_PATH.read_text(encoding="utf-8")
 

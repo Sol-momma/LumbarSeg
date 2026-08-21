@@ -56,6 +56,7 @@ class BoundaryFocalConfigurationTests(unittest.TestCase):
             self.assertIn("combined_dice_weight\t0.4", contents)
             self.assertIn("boundary_class_id\t2", contents)
             self.assertIn("focal_canal_boundary_boost\t2.0", contents)
+            self.assertIn("keras_jit_compile\tfalse", contents)
 
 
 @unittest.skipIf(tf is None, "TensorFlow is available in the WSL training environment")
