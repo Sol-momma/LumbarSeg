@@ -42,6 +42,7 @@ jobs:
           pandas==2.2.3
           scipy==1.12.0
           scikit-learn==1.4.2
+          tqdm==4.66.5
           pytest==8.3.5
       - name: Parse tracked Python files without importing heavy libraries
         run: |
