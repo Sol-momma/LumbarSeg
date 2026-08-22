@@ -1,9 +1,12 @@
-tensorflow<2.11
-SimpleITK
-opencv-python
+# TensorFlow 2.10 is the last native-Windows GPU release. These pins target
+# Python 3.10 + CUDA 11.2 + cuDNN 8.1 and intentionally differ from the WSL set.
+tensorflow==2.10.1
+SimpleITK==2.3.1
+opencv-python==4.8.1.78
 numpy==1.23.5
-pandas
-scipy
-scikit-learn
-tqdm
-matplotlib
+pandas==1.5.3
+scipy==1.10.1
+scikit-learn==1.2.2
+tqdm==4.66.5
+matplotlib==3.7.5
+pytest==7.4.4

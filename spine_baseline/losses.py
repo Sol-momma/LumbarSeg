@@ -50,10 +50,10 @@ def write_loss_config(
         "boundary_class_id": 2,
         "boundary_definition": "ground_truth_morphological_gradient_3x3",
         "boundary_normalization": "weighted_mean",
-        # Keras' automatic XLA compilation expanded this small max-pool based
-        # boundary operation into a 12.29 GiB training graph on the 8 GiB RTX
-        # 3060 Ti.  The mathematical loss is unchanged when JIT is disabled.
-        "keras_jit_compile": "false" if focal_canal_boundary_boost > 0.0 else "auto",
+        # Automatic XLA both expanded the boundary graph beyond 8 GiB and lacks
+        # a deterministic MaxPool gradient for the baseline on TensorFlow 2.15.
+        # Training therefore uses one explicit non-XLA path for every candidate.
+        "keras_jit_compile": "false",
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

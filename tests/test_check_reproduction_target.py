@@ -12,6 +12,7 @@ from scripts.check_reproduction_target import (
     FOREGROUND_MACRO_TARGET,
     PAPER_DICE_TARGETS,
     TargetEvidenceError,
+    assess_paper_protocol,
     check_metrics,
 )
 
@@ -44,6 +45,16 @@ class CheckReproductionTargetTests(unittest.TestCase):
             result = check_metrics(path)
         self.assertAlmostEqual(result.foreground_macro_dice, FOREGROUND_MACRO_TARGET)
         self.assertTrue(result.score_target_met)
+
+    def test_exact_paper_class_vector_is_separate_from_macro_097(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = self.write_metrics(Path(temp_dir), list(PAPER_DICE_TARGETS.items()))
+            result = check_metrics(path)
+
+        self.assertTrue(result.paper_class_targets_met)
+        self.assertFalse(result.foreground_macro_target_met)
+        self.assertFalse(result.score_target_met)
+        self.assertAlmostEqual(result.foreground_macro_dice, sum(PAPER_DICE_TARGETS.values()) / 3)
 
     def test_background_and_mean_do_not_change_decision(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -90,7 +101,11 @@ class CheckReproductionTargetTests(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
-            self.assertTrue(json.loads(output.read_text(encoding="utf-8"))["score_target_met"])
+            payload = json.loads(output.read_text(encoding="utf-8"))
+            self.assertTrue(payload["score_target_met"])
+            self.assertTrue(payload["paper_class_targets_met"])
+            self.assertTrue(payload["foreground_macro_target_met"])
+            self.assertEqual(payload["paper_protocol_verified"], "unverified")
 
             missed = self.write_metrics(
                 root,
@@ -128,12 +143,92 @@ class CheckReproductionTargetTests(unittest.TestCase):
             result = check_metrics(metrics, run_config_path=config, required_sequence="T2_SPACE")
             self.assertEqual(result.run_config["sequences"], "T2_SPACE")
 
+    def test_resume_evidence_exposes_uninterrupted_equivalence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            metrics = self.write_metrics(root, self.passing_rows())
+            resume = root / "training_resume.tsv"
+            resume.write_text(
+                "key\tvalue\n"
+                "resume_requested\ttrue\n"
+                "equivalent_to_uninterrupted_run\tfalse\n",
+                encoding="utf-8",
+            )
+
+            result = check_metrics(metrics, training_resume_path=resume)
+
+        self.assertFalse(result.uninterrupted_run_equivalent)
+        self.assertEqual(result.training_resume_evidence["resume_requested"], "true")
+
+    def test_resume_evidence_rejects_ambiguous_equivalence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            metrics = self.write_metrics(root, self.passing_rows())
+            resume = root / "training_resume.tsv"
+            resume.write_text(
+                "key\tvalue\nequivalent_to_uninterrupted_run\tunknown\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(TargetEvidenceError, "must declare"):
+                check_metrics(metrics, training_resume_path=resume)
+
     def test_invalid_macro_target_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             metrics = self.write_metrics(Path(temp_dir), self.passing_rows())
             for target in (float("nan"), -0.1, 1.1):
                 with self.subTest(target=target), self.assertRaises(TargetEvidenceError):
                     check_metrics(metrics, foreground_macro_target=target)
+
+    def test_paper_protocol_requires_every_aspect_and_evidence(self) -> None:
+        config = {"sequences": "T2_SPACE", "filter_definition": "paper_filter_exact"}
+        for aspect in ("preprocessing", "filtering", "split", "training", "evaluation"):
+            config[f"paper_protocol_{aspect}_status"] = "verified"
+            config[f"paper_protocol_{aspect}_evidence"] = f"verified {aspect} manifest sha256"
+
+        status, evidence = assess_paper_protocol(config)
+
+        self.assertEqual(status, "verified")
+        self.assertTrue(any("evaluation: verified" in item for item in evidence))
+
+    def test_paper_protocol_proxy_filter_is_blocked_with_reason(self) -> None:
+        config = {
+            "sequences": "T2_SPACE",
+            "filter_definition": "paper_filter_proxy_dominant_foreground_fraction",
+        }
+        for aspect in ("preprocessing", "filtering", "split", "training", "evaluation"):
+            config[f"paper_protocol_{aspect}_status"] = "verified"
+            config[f"paper_protocol_{aspect}_evidence"] = "artifact hash"
+
+        status, evidence = assess_paper_protocol(config)
+
+        self.assertEqual(status, "blocked")
+        self.assertTrue(any("unpublished exact 55% rule" in item for item in evidence))
+
+    def test_author_diagnostic_split_cannot_become_verified_protocol(self) -> None:
+        config = {
+            "sequences": "T2_SPACE",
+            "filter_definition": "paper_filter_exact",
+            "split_mode": "author_diagnostic_random_slice_90_10",
+            "final_generalization_evidence": "false",
+        }
+        for aspect in ("preprocessing", "filtering", "split", "training", "evaluation"):
+            config[f"paper_protocol_{aspect}_status"] = "verified"
+            config[f"paper_protocol_{aspect}_evidence"] = "artifact hash"
+
+        status, evidence = assess_paper_protocol(config)
+
+        self.assertEqual(status, "unverified")
+        self.assertTrue(any("diagnostic only" in item for item in evidence))
+
+    def test_paper_protocol_rejects_unknown_aspect_status(self) -> None:
+        with self.assertRaisesRegex(TargetEvidenceError, "must be one of"):
+            assess_paper_protocol(
+                {
+                    "sequences": "T2_SPACE",
+                    "paper_protocol_preprocessing_status": "assumed",
+                }
+            )
 
 
 if __name__ == "__main__":

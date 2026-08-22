@@ -1,0 +1,122 @@
+name: Lightweight validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_heavy_tests:
+        description: Install the pinned training stack and run dependency-backed CPU tests
+        required: false
+        default: false
+        type: boolean
+      run_gpu_tests:
+        description: Run the explicit GPU gate on a self-hosted runner labelled gpu
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lightweight-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lightweight:
+    name: Syntax and dependency-light tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install only lightweight test dependencies
+        run: python -m pip install numpy==1.26.4 pandas==2.2.3 pytest==8.3.5
+      - name: Parse tracked Python files without importing heavy libraries
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          import subprocess
+
+          files = subprocess.check_output(["git", "ls-files", "*.py"], text=True).splitlines()
+          for filename in files:
+              ast.parse(Path(filename).read_text(encoding="utf-8"), filename=filename)
+          print(f"Parsed {len(files)} Python files")
+          PY
+      - name: Check Bash syntax
+        run: |
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $HadErrors = $false
+          Get-ChildItem scripts -Filter *.ps1 | ForEach-Object {
+            $Tokens = $null
+            $Errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName,
+              [ref]$Tokens,
+              [ref]$Errors
+            ) | Out-Null
+            if ($Errors.Count -gt 0) {
+              $HadErrors = $true
+              Write-Error "$($_.FullName): $($Errors -join '; ')"
+            }
+          }
+          if ($HadErrors) { exit 1 }
+      - name: Run lightweight suite; GPU and heavy imports remain absent by design
+        env:
+          # Queue unit tests use temporary directories; the production 20 GiB
+          # gate is covered as a contract and must not depend on runner capacity.
+          MIN_FREE_BYTES: "1"
+        run: python -m pytest -q -p no:cacheprovider
+
+  heavy-dependency-tests:
+    name: Manual pinned-stack CPU tests
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_heavy_tests }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install the pinned baseline environment
+        run: |
+          python -m pip install -r requirements-baseline.txt
+          python -m pip check
+      - name: Run all tests with heavy CPU imports enabled
+        env:
+          MIN_FREE_BYTES: "1"
+        run: python -m pytest -q -p no:cacheprovider
+
+  gpu-runtime-gate:
+    name: Manual self-hosted GPU gate
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_gpu_tests }}
+    runs-on: [self-hosted, linux, x64, gpu]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install the pinned baseline environment
+        run: |
+          python -m pip install -r requirements-baseline.txt
+          python -m pip check
+      - name: Require TensorFlow GPU visibility
+        run: |
+          python -c "import tensorflow as tf; g=tf.config.list_physical_devices('GPU'); print(g); raise SystemExit(0 if g else 'No GPU detected by TensorFlow')"
+      - name: Run dependency-backed tests after the GPU gate
+        env:
+          MIN_FREE_BYTES: "1"
+        run: python -m pytest -q -p no:cacheprovider

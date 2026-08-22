@@ -1,7 +1,13 @@
 from argparse import ArgumentParser
+import os
 from pathlib import Path
 
-import numpy as np
+# TensorFlow reads this switch while initializing devices. Set it before the
+# import so a run cannot silently fall back to non-deterministic GPU kernels.
+# The seed is still supplied below because deterministic kernels alone do not
+# control initialization or dataset shuffling.
+os.environ.setdefault("TF_DETERMINISTIC_OPS", "1")
+
 import tensorflow as tf
 from tensorflow import keras
 
@@ -12,15 +18,23 @@ from spine_baseline.class_weights import (
 )
 from spine_baseline.dataset import create_dataset
 from spine_baseline.file_lists import (
+    COHORT_DISJOINT_MODES,
+    COHORT_MODE_STRICT_SERIES,
     exclude_files,
     read_file_list,
     validate_disjoint_cohorts,
     validate_slice_files,
+    write_cohort_validation_report,
 )
 from spine_baseline.losses import combined_loss, validate_loss_configuration, write_loss_config
 from spine_baseline.metrics import dice_coefficient, mean_iou
 from spine_baseline.model import build_modified_unet
 from spine_baseline.preprocessing import extract_slices, filter_slices, split_train_val
+from spine_baseline.training_resume import (
+    read_resume_best_metric,
+    validate_training_resume_state,
+    write_training_resume_evidence,
+)
 
 
 def prepare_output(output_root: Path) -> Path:
@@ -65,6 +79,31 @@ def main() -> None:
             "fails if any existing image/mask pair is invalid. Intended for read-only batch probes."
         ),
     )
+    parser.add_argument(
+        "--reuse_processed_cache",
+        action="store_true",
+        help=(
+            "Read an existing processed cache without extraction, then derive this run's training "
+            "cohort with its filtering settings. Requires --run_output_root and a fixed validation list."
+        ),
+    )
+    parser.add_argument(
+        "--cohort_disjoint_mode",
+        choices=COHORT_DISJOINT_MODES,
+        default=COHORT_MODE_STRICT_SERIES,
+        help=(
+            "Cohort isolation policy. strict_series is required for final generalization evidence. "
+            "author_diagnostic_slice permits one MRI series across cohorts only for paper-alignment diagnosis."
+        ),
+    )
+    parser.add_argument(
+        "--resume_training",
+        action="store_true",
+        help=(
+            "Resume an interrupted explicit run from its Keras epoch backup. "
+            "Requires --run_output_root and exact saved train/validation cohorts."
+        ),
+    )
     args = parser.parse_args()
     data, model_params, opt = get_param_groups(args)
     # Fail before reading or writing experiment data when the requested loss
@@ -74,27 +113,46 @@ def main() -> None:
         opt.focal_canal_boundary_boost,
     )
 
-    np.random.seed(opt.seed)
-    tf.random.set_seed(opt.seed)
+    # set_random_seed covers Python, NumPy, and TensorFlow. Explicitly enabling
+    # deterministic ops makes the recorded seed meaningful on GPU rather than
+    # merely making initialization repeatable.
+    keras.utils.set_random_seed(opt.seed)
+    tf.config.experimental.enable_op_determinism()
 
     explicit_train_files = read_file_list(args.train_file_list) if args.train_file_list is not None else None
     explicit_val_files = (
         read_file_list(args.validation_file_list) if args.validation_file_list is not None else None
     )
+    run_output_root = args.run_output_root or data.output_root
+    if args.resume_training and args.run_output_root is None:
+        raise ValueError("--resume_training requires an explicit --run_output_root")
+    if args.reuse_processed_cache and args.run_output_root is None:
+        raise ValueError("--reuse_processed_cache requires an explicit --run_output_root")
+    if args.reuse_processed_cache and args.reuse_processed_only:
+        raise ValueError("Choose either --reuse_processed_cache or --reuse_processed_only")
     selected_files = None
-    if explicit_train_files is not None or explicit_val_files is not None:
-        # When fixed lists are supplied, extracting unrelated series turns a
+    if explicit_train_files is not None and explicit_val_files is not None:
+        # When both fixed lists are supplied, extracting unrelated series turns a
         # one-step memory probe into a long preprocessing job. The extractor
         # understands exact slice names, so restrict work to the requested
         # union without changing the normal no-list path.
         selected_files = set(explicit_train_files or []) | set(explicit_val_files or [])
 
-    if args.reuse_processed_only:
-        if explicit_train_files is None or explicit_val_files is None:
+    if args.reuse_processed_only or args.reuse_processed_cache:
+        if args.reuse_processed_only and (explicit_train_files is None or explicit_val_files is None):
             raise ValueError("--reuse_processed_only requires both explicit train and validation file lists")
+        if args.reuse_processed_cache and explicit_val_files is None:
+            raise ValueError("--reuse_processed_cache requires an explicit validation file list")
         if data.force_reprocess:
-            raise ValueError("--reuse_processed_only cannot be combined with --force_reprocess")
-        extract_stats = {"mode": "reuse_processed_only", "files_processed": 0, "errors": []}
+            raise ValueError("Processed-cache reuse cannot be combined with --force_reprocess")
+        for required_dir in (data.output_root / "images", data.output_root / "masks"):
+            if not required_dir.is_dir():
+                raise ValueError(f"Processed cache directory does not exist: {required_dir}")
+        extract_stats = {
+            "mode": "reuse_processed_only" if args.reuse_processed_only else "reuse_processed_cache",
+            "files_processed": 0,
+            "errors": [],
+        }
     else:
         extract_stats = extract_slices(
             data_root=data.data_root,
@@ -127,6 +185,7 @@ def main() -> None:
             data.min_classes,
             data.imbalance_threshold,
             data.max_slices_per_sequence,
+            evidence_root=run_output_root,
         )
         train_files, val_files, unmatched = split_train_val(data.data_root, kept_files)
     if explicit_train_files is not None:
@@ -158,17 +217,31 @@ def main() -> None:
     expected_shape = (data.target_height, data.target_width)
     validate_slice_files(train_files, data.output_root, "Train", allowed_sequences, expected_shape)
     validate_slice_files(val_files, data.output_root, "Validation", allowed_sequences, expected_shape)
-    validate_disjoint_cohorts(train_files, val_files)
+    cohort_report = validate_disjoint_cohorts(
+        train_files,
+        val_files,
+        mode=args.cohort_disjoint_mode,
+    )
+    if cohort_report.warning:
+        print(f"WARNING: {cohort_report.warning}")
 
     # output_root remains the preprocessing cache for backward compatibility.
     # A separate run root is important for batch-size probes: smoke checkpoints
     # must never replace a full experiment's best model or evidence files.
-    run_output_root = args.run_output_root or data.output_root
+    resume_paths = None
+    if args.run_output_root is not None:
+        resume_paths = validate_training_resume_state(
+            run_output_root,
+            resume_requested=args.resume_training,
+            train_files=train_files,
+            validation_files=val_files,
+        )
 
     # Filtering rules are experiment inputs, so recomputing the validation
     # cohort in evaluate.py could make an easier cohort look like a better
     # model. Save the exact lists before training and reuse validation_files.txt.
     run_output_root.mkdir(parents=True, exist_ok=True)
+    write_cohort_validation_report(run_output_root / "cohort_validation.tsv", cohort_report)
     write_file_list(run_output_root / "train_files.txt", train_files)
     write_file_list(run_output_root / "validation_files.txt", val_files)
     write_file_list(run_output_root / "unmatched_files.txt", unmatched)
@@ -219,11 +292,12 @@ def main() -> None:
         dropout_rate=model_params.dropout_rate,
         leaky_relu_alpha=model_params.leaky_relu_alpha,
     )
-    # Keras' automatic XLA path needs more than the available 8 GiB when the
-    # morphological boundary term is present.  Disable only compilation of
-    # that candidate graph; the baseline keeps its established "auto" mode and
-    # the loss values and gradients are otherwise unchanged.
-    jit_compile = False if opt.focal_canal_boundary_boost > 0.0 else "auto"
+    # Deterministic GPU execution and Keras' automatic XLA path are not
+    # compatible here: TensorFlow 2.15 has no deterministic XLA MaxPool
+    # gradient, and the boundary candidate also exceeds the available 8 GiB
+    # when XLA is selected. Keep one auditable execution path for every
+    # candidate instead of allowing runtime-dependent "auto" compilation.
+    jit_compile = False
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=opt.learning_rate),
         loss=combined_loss(
@@ -237,12 +311,38 @@ def main() -> None:
     )
 
     checkpoint_dir = prepare_output(run_output_root)
-    callbacks = [
+    checkpoint_threshold = None
+    if args.resume_training:
+        checkpoint_threshold = read_resume_best_metric(
+            checkpoint_dir / "training_log.csv",
+            "val_mean_iou",
+        )
+    write_training_resume_evidence(
+        run_output_root / "training_resume.tsv",
+        resume_requested=args.resume_training,
+        historical_best=checkpoint_threshold,
+    )
+    callbacks = []
+    if resume_paths is not None:
+        # BackupAndRestore persists the model, optimizer, and completed epoch.
+        # It does not persist EarlyStopping or ReduceLROnPlateau counters. Its
+        # automatic restore is guarded above by an explicit flag and exact
+        # cohort comparison, and training_resume.tsv keeps a resumed run out of
+        # the canonical uninterrupted comparison.
+        callbacks.append(
+            keras.callbacks.BackupAndRestore(
+                backup_dir=str(resume_paths.backup_dir),
+                save_freq="epoch",
+                delete_checkpoint=True,
+            )
+        )
+    callbacks.extend([
         keras.callbacks.ModelCheckpoint(
             filepath=str(checkpoint_dir / "best_model.keras"),
             monitor="val_mean_iou",
             mode="max",
             save_best_only=True,
+            initial_value_threshold=checkpoint_threshold,
             verbose=1,
         ),
         keras.callbacks.EarlyStopping(
@@ -260,8 +360,11 @@ def main() -> None:
             min_lr=1e-7,
             verbose=1,
         ),
-        keras.callbacks.CSVLogger(str(checkpoint_dir / "training_log.csv")),
-    ]
+        keras.callbacks.CSVLogger(
+            str(checkpoint_dir / "training_log.csv"),
+            append=args.resume_training,
+        ),
+    ])
 
     history = model.fit(train_ds, validation_data=val_ds, epochs=opt.epochs, callbacks=callbacks, verbose=1)
     model.save(str(checkpoint_dir / "final_model.keras"))

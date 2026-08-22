@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 
 # The Mac-side lightweight test environment intentionally omits TensorFlow;
 # these tests exercise NumPy evaluation logic only. Keep the stub local to the
@@ -18,7 +19,9 @@ if importlib.util.find_spec("tensorflow") is None:
 
 from spine_baseline.constants import CLASS_NAMES
 from spine_baseline.metrics import (
+    AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS,
     aggregate_overlap_metrics,
+    aggregate_probability_dice,
     evaluate_classwise,
     evaluate_classwise_with_aggregations,
 )
@@ -106,9 +109,14 @@ class MetricsAggregationTests(unittest.TestCase):
         self.assertEqual(set(aggregations["scope"]), expected_scopes)
         self.assertEqual(
             set(aggregations["aggregation"]),
-            {"slice_macro", "pixel_pooled", "series_macro"},
+            {
+                "slice_macro",
+                "pixel_pooled",
+                "series_macro",
+                *AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS,
+            },
         )
-        self.assertEqual(len(aggregations), 3 * (len(CLASS_NAMES) + 2))
+        self.assertEqual(len(aggregations), 6 * (len(CLASS_NAMES) + 2))
 
         slice_macro = aggregations.loc[aggregations["aggregation"] == "slice_macro"].set_index("scope")
         legacy_by_class = legacy.set_index("class")
@@ -130,6 +138,66 @@ class MetricsAggregationTests(unittest.TestCase):
             slice_macro.loc["foreground_classes", "dice"],
             slice_macro.loc[CLASS_NAMES[1:], "dice"].mean(),
         )
+
+        probability_rows = aggregations.loc[
+            aggregations["aggregation"].isin(AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS)
+        ]
+        self.assertTrue(probability_rows[["iou", "precision", "recall", "f1"]].isna().all().all())
+
+    def test_probability_dice_preserves_probabilities_and_weighting_definitions(self) -> None:
+        # Each array contains sum(y_true * probability) and sum(y_true) +
+        # sum(probability) for two classes. Unequal slice and series sizes make
+        # all three aggregation choices inspectable.
+        intersections = [
+            np.array([3.0, 1.0]),
+            np.array([1.0, 0.5]),
+            np.array([2.0, 3.0]),
+        ]
+        denominators = [
+            np.array([7.0, 4.0]),
+            np.array([5.0, 3.0]),
+            np.array([5.0, 7.0]),
+        ]
+        results = aggregate_probability_dice(
+            intersections,
+            denominators,
+            ["series_a", "series_a", "series_b"],
+            num_classes=2,
+        )
+        class_one = results.loc[results["scope"] == CLASS_NAMES[1]].set_index("aggregation")
+
+        expected_slice = ((2.0 / 4.0) + (1.0 / 3.0) + (6.0 / 7.0)) / 3.0
+        expected_pixel = 2.0 * (1.0 + 0.5 + 3.0) / (4.0 + 3.0 + 7.0)
+        expected_series = (
+            (2.0 * (1.0 + 0.5) / (4.0 + 3.0))
+            + (6.0 / 7.0)
+        ) / 2.0
+        self.assertAlmostEqual(
+            class_one.loc[AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS[0], "dice"],
+            expected_slice,
+        )
+        self.assertAlmostEqual(
+            class_one.loc[AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS[1], "dice"],
+            expected_pixel,
+        )
+        self.assertAlmostEqual(
+            class_one.loc[AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS[2], "dice"],
+            expected_series,
+        )
+
+    def test_probability_rows_do_not_change_historical_hard_results(self) -> None:
+        slice_confusions = [np.array([[3, 1], [1, 3]])]
+        expected_hard = aggregate_overlap_metrics(slice_confusions, ["series_a"], num_classes=2)
+        probability = aggregate_probability_dice(
+            [np.array([2.5, 2.5])],
+            [np.array([7.0, 7.0])],
+            ["series_a"],
+            num_classes=2,
+        )
+        combined = pd.concat([expected_hard, probability], ignore_index=True)
+
+        actual_hard = combined.loc[combined["aggregation"].isin({"slice_macro", "pixel_pooled", "series_macro"})]
+        pd.testing.assert_frame_equal(actual_hard.reset_index(drop=True), expected_hard)
 
 
 if __name__ == "__main__":

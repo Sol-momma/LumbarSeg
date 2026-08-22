@@ -390,7 +390,15 @@ def filter_slices(
     min_classes: int,
     imbalance_threshold: float,
     max_slices_per_sequence: int | None = 1000,
+    evidence_root: Path | None = None,
 ) -> tuple[list[str], dict]:
+    """Filter a processed cache and keep each run's evidence separate.
+
+    ``output_root`` owns the masks being read. A campaign may reuse those
+    immutable arrays while writing ``filtered_files.txt`` and its statistics to
+    a new ``evidence_root``. This prevents one filtering candidate from
+    modifying the baseline cache or another candidate's evidence.
+    """
     mask_dir = output_root / "masks"
     eligible_rows = []
     eligible_files = []
@@ -454,11 +462,12 @@ def filter_slices(
             kept.append(filename)
             rows.append(row)
 
-    output_root.mkdir(parents=True, exist_ok=True)
-    with (output_root / "filtered_files.txt").open("w") as handle:
+    evidence_root = evidence_root or output_root
+    evidence_root.mkdir(parents=True, exist_ok=True)
+    with (evidence_root / "filtered_files.txt").open("w") as handle:
         for filename in kept:
             handle.write(filename + "\n")
-    pd.DataFrame(rows).to_csv(output_root / "filtered_slice_stats.csv", index=False)
+    pd.DataFrame(rows).to_csv(evidence_root / "filtered_slice_stats.csv", index=False)
 
     stats = {
         "before_filtering": len(list(mask_dir.glob("*.npz"))),

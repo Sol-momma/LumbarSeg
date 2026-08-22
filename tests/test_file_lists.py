@@ -5,10 +5,13 @@ from pathlib import Path
 import numpy as np
 
 from spine_baseline.file_lists import (
+    AUTHOR_DIAGNOSTIC_WARNING,
+    COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE,
     exclude_files,
     read_file_list,
     validate_disjoint_cohorts,
     validate_slice_files,
+    write_cohort_validation_report,
 )
 
 
@@ -69,6 +72,47 @@ class FileListValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "overlap"):
             validate_disjoint_cohorts(["Slice.npz"], ["slice.npz"])
+
+    def test_strict_cohorts_reject_different_slices_from_one_series(self) -> None:
+        with self.assertRaisesRegex(ValueError, "share 1 MRI series"):
+            validate_disjoint_cohorts(
+                ["patient_001_t2_space_s001.npz"],
+                ["patient_001_t2_space_s002.npz"],
+            )
+
+    def test_author_diagnostic_mode_allows_series_overlap_but_marks_limit(self) -> None:
+        report = validate_disjoint_cohorts(
+            ["patient_001_t2_space_s001.npz"],
+            ["patient_001_t2_space_s002.npz"],
+            mode=COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE,
+        )
+
+        self.assertEqual(report.shared_series, ("patient_001_t2_space",))
+        self.assertFalse(report.final_generalization_evidence)
+        self.assertEqual(report.warning, AUTHOR_DIAGNOSTIC_WARNING)
+
+    def test_author_diagnostic_mode_still_rejects_same_slice(self) -> None:
+        with self.assertRaisesRegex(ValueError, "overlap"):
+            validate_disjoint_cohorts(
+                ["patient_001_t2_space_s001.npz"],
+                ["patient_001_t2_space_s001.npz"],
+                mode=COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE,
+            )
+
+    def test_cohort_report_persists_diagnostic_warning(self) -> None:
+        report = validate_disjoint_cohorts(
+            ["patient_001_t2_space_s001.npz"],
+            ["patient_001_t2_space_s002.npz"],
+            mode=COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cohort_validation.tsv"
+            write_cohort_validation_report(path, report)
+            saved = path.read_text(encoding="utf-8")
+
+        self.assertIn("cohort_disjoint_mode\tauthor_diagnostic_slice", saved)
+        self.assertIn("final_generalization_evidence\tfalse", saved)
+        self.assertIn(AUTHOR_DIAGNOSTIC_WARNING, saved)
 
     def test_validate_slice_files_rejects_fractional_mask(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

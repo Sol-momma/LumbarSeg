@@ -10,6 +10,8 @@ def test_wsl_probe_is_fixed_cohort_and_output_isolated():
     assert 'BATCH_SIZE="${BATCH_SIZE:-8}"' in script
     assert ': "${TRAIN_FILE_LIST:?' in script
     assert ': "${VALIDATION_FILE_LIST:?' in script
+    assert ': "${TRAIN_COHORT_MANIFEST:?' in script
+    assert ': "${VALIDATION_COHORT_MANIFEST:?' in script
     assert '--train_file_list "$TRAIN_FILE_LIST"' in script
     assert '--validation_file_list "$VALIDATION_FILE_LIST"' in script
     assert '--run_output_root "$RUN_OUTPUT_ROOT"' in script
@@ -19,6 +21,8 @@ def test_wsl_probe_is_fixed_cohort_and_output_isolated():
     assert 'train_count != BATCH_SIZE' in script
     assert 'validation_count != BATCH_SIZE' in script
     assert 'BATCH_SIZE != 8' in script
+    assert 'blocked_hardware' in script
+    assert 'MIN_BATCH8_GPU_MEMORY_MIB' in script
 
 
 def test_wsl_probe_requires_tensorflow_gpu():
@@ -26,3 +30,4 @@ def test_wsl_probe_requires_tensorflow_gpu():
 
     assert "tf.config.list_physical_devices('GPU')" in script
     assert "No GPU detected by TensorFlow" in script
+    assert 'harness_write_provenance' in script

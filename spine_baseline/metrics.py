@@ -11,6 +11,11 @@ from spine_baseline.dataset import load_sample, load_slice_spacing
 
 OVERLAP_METRIC_NAMES = ("dice", "iou", "precision", "recall", "f1")
 _SMOOTH = 1e-7
+AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS = (
+    "author_diagnostic_probability_slice_macro",
+    "author_diagnostic_probability_pixel_pooled",
+    "author_diagnostic_probability_series_macro",
+)
 
 
 def _get_series_id(slice_filename: str) -> str:
@@ -241,6 +246,115 @@ def aggregate_overlap_metrics(
     )
 
 
+def aggregate_probability_dice(
+    slice_intersections: list[np.ndarray],
+    slice_denominators: list[np.ndarray],
+    series_ids: list[str],
+    num_classes: int,
+) -> pd.DataFrame:
+    """Aggregate soft/probability Dice without changing the historical hard Dice.
+
+    These rows are explicitly labelled as an author-alignment diagnostic. A
+    probability Dice can be materially higher or lower than argmax-mask Dice and
+    must not replace the fixed-series hard Dice used as final generalization
+    evidence. We provide the same slice, pixel, and series weightings so an
+    apparent paper match cannot be attributed to an unrecorded aggregation rule.
+    """
+    if not slice_intersections:
+        raise ValueError("No probability Dice statistics provided")
+    if not (
+        len(slice_intersections) == len(slice_denominators) == len(series_ids)
+    ):
+        raise ValueError(
+            "slice_intersections, slice_denominators, and series_ids must have the same length"
+        )
+
+    intersections = np.stack(slice_intersections).astype(np.float64, copy=False)
+    denominators = np.stack(slice_denominators).astype(np.float64, copy=False)
+    expected_shape = (len(series_ids), num_classes)
+    if intersections.shape != expected_shape or denominators.shape != expected_shape:
+        raise ValueError(
+            f"Expected probability statistics with shape {expected_shape}, "
+            f"got {intersections.shape} and {denominators.shape}"
+        )
+    if not np.isfinite(intersections).all() or not np.isfinite(denominators).all():
+        raise ValueError("Probability Dice statistics must be finite")
+    if (intersections < 0).any() or (denominators < 0).any():
+        raise ValueError("Probability Dice statistics must be non-negative")
+
+    series_stats: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for series_id, intersection, denominator in zip(series_ids, intersections, denominators):
+        if series_id not in series_stats:
+            series_stats[series_id] = (
+                np.zeros(num_classes, dtype=np.float64),
+                np.zeros(num_classes, dtype=np.float64),
+            )
+        series_intersection, series_denominator = series_stats[series_id]
+        series_intersection += intersection
+        series_denominator += denominator
+
+    series_intersections = np.stack([stats[0] for stats in series_stats.values()])
+    series_denominators = np.stack([stats[1] for stats in series_stats.values()])
+    aggregation_inputs = {
+        AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS[0]: (intersections, denominators),
+        AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS[1]: (
+            intersections.sum(axis=0, keepdims=True),
+            denominators.sum(axis=0, keepdims=True),
+        ),
+        AUTHOR_DIAGNOSTIC_PROBABILITY_AGGREGATIONS[2]: (
+            series_intersections,
+            series_denominators,
+        ),
+    }
+
+    class_names = [CLASS_NAMES[class_id] for class_id in range(num_classes)]
+    rows = []
+    for aggregation, (aggregation_intersections, aggregation_denominators) in aggregation_inputs.items():
+        sample_dice = (2.0 * aggregation_intersections + _SMOOTH) / (
+            aggregation_denominators + _SMOOTH
+        )
+        class_dice = sample_dice.mean(axis=0)
+        for class_id, class_name in enumerate(class_names):
+            rows.append({
+                "aggregation": aggregation,
+                "scope": class_name,
+                "dice": class_dice[class_id],
+                "iou": np.nan,
+                "precision": np.nan,
+                "recall": np.nan,
+                "f1": np.nan,
+                "slice_count": len(series_ids),
+                "series_count": len(series_stats),
+            })
+
+        for scope, indices in {
+            "all_classes": np.arange(num_classes),
+            "foreground_classes": np.arange(1, num_classes),
+        }.items():
+            rows.append({
+                "aggregation": aggregation,
+                "scope": scope,
+                "dice": class_dice[indices].mean(),
+                "iou": np.nan,
+                "precision": np.nan,
+                "recall": np.nan,
+                "f1": np.nan,
+                "slice_count": len(series_ids),
+                "series_count": len(series_stats),
+            })
+
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "aggregation",
+            "scope",
+            *OVERLAP_METRIC_NAMES,
+            "slice_count",
+            "series_count",
+        ],
+    )
+
+
 def evaluate_classwise_with_aggregations(
     model,
     file_list: list[str],
@@ -261,6 +375,8 @@ def evaluate_classwise_with_aggregations(
     all_trues = []
     slice_confusions = []
     series_ids = []
+    probability_intersections = []
+    probability_denominators = []
 
     for filename in tqdm(eval_files, desc="Evaluating"):
         image, mask_onehot = load_sample(filename, output_root, num_classes)
@@ -275,6 +391,13 @@ def evaluate_classwise_with_aggregations(
         all_trues.append(true_class)
         slice_confusions.append(_confusion_matrix(true_class, pred_class, num_classes))
         series_ids.append(_get_series_id(filename))
+        # Preserve the model probabilities before argmax. This is the only point
+        # where an author-style soft Dice can be computed without rerunning
+        # inference or pretending a hard one-hot prediction was probabilistic.
+        probability_intersections.append(np.sum(mask_onehot * pred, axis=(0, 1)))
+        probability_denominators.append(
+            np.sum(mask_onehot, axis=(0, 1)) + np.sum(pred, axis=(0, 1))
+        )
 
         for class_id in range(num_classes):
             pred_mask = pred_class == class_id
@@ -310,7 +433,17 @@ def evaluate_classwise_with_aggregations(
     for column in ["dice", "iou", "asd", "nsd", "precision", "recall", "f1"]:
         mean_row[column] = results[column].mean()
     classwise_results = pd.concat([results, pd.DataFrame([mean_row])], ignore_index=True)
-    aggregation_results = aggregate_overlap_metrics(slice_confusions, series_ids, num_classes)
+    hard_aggregation_results = aggregate_overlap_metrics(slice_confusions, series_ids, num_classes)
+    probability_aggregation_results = aggregate_probability_dice(
+        probability_intersections,
+        probability_denominators,
+        series_ids,
+        num_classes,
+    )
+    aggregation_results = pd.concat(
+        [hard_aggregation_results, probability_aggregation_results],
+        ignore_index=True,
+    )
     return classwise_results, aggregation_results
 
 

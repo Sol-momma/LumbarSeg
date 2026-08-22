@@ -7,7 +7,34 @@ import pytest
 sitk = pytest.importorskip("SimpleITK")
 
 from spine_baseline.orientation import OrientationTransform, transform_pair
-from spine_baseline.preprocessing import extract_slices, transformed_resized_slice_spacing
+from spine_baseline.preprocessing import (
+    extract_slices,
+    filter_slices,
+    transformed_resized_slice_spacing,
+)
+
+
+def test_filter_evidence_can_be_separated_from_shared_processed_cache(tmp_path: Path) -> None:
+    processed_root = tmp_path / "processed"
+    evidence_root = tmp_path / "candidate"
+    (processed_root / "masks").mkdir(parents=True)
+    np.savez_compressed(
+        processed_root / "masks" / "case_t2_space_s000.npz",
+        mask=np.asarray([[0, 1], [2, 3]], dtype=np.uint8),
+    )
+
+    kept, _ = filter_slices(
+        processed_root,
+        min_classes=4,
+        imbalance_threshold=0.90,
+        evidence_root=evidence_root,
+    )
+
+    assert kept == ["case_t2_space_s000.npz"]
+    assert (evidence_root / "filtered_files.txt").read_text().strip() == kept[0]
+    assert (evidence_root / "filtered_slice_stats.csv").is_file()
+    assert not (processed_root / "filtered_files.txt").exists()
+    assert not (processed_root / "filtered_slice_stats.csv").exists()
 
 
 def test_quarter_turn_swaps_physical_spacing_before_resize() -> None:

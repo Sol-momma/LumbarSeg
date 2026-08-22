@@ -20,9 +20,22 @@ class WindowsSmokeScriptTests(unittest.TestCase):
         self.assertIn('$TrainCount -ne $BatchSize', script)
         self.assertIn('$ValidationCount -ne $BatchSize', script)
         self.assertIn('$BatchSize -ne 8', script)
+        self.assertIn('[int]$Seed = 42', script)
+        self.assertIn('[Int64]$MinimumFreeBytes = 2GB', script)
+        self.assertIn('Assert-FreeDiskSpace', script)
+        self.assertIn('Assert-BatchHardware', script)
+        self.assertIn('blocked_hardware', script)
+        self.assertIn('12288', script)
         self.assertIn('"--reuse_processed_only"', script)
+        self.assertIn('"--seed", $Seed', script)
         self.assertIn('$ProcessedPath -eq $ProbePath', script)
         self.assertIn('RunOutputRoot must not already exist', script)
+        self.assertIn('Assert-NativeSuccess "TensorFlow GPU check"', script)
+        self.assertIn('Assert-NativeSuccess "Batch-size smoke probe"', script)
+        self.assertIn('environment_provenance.tsv', script)
+        self.assertIn('installed-packages.txt', script)
+        self.assertIn('windows_smoke.log', script)
+        self.assertIn('Smoke probe did not produce a non-empty best model', script)
 
 
 if __name__ == "__main__":

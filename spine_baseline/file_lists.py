@@ -1,6 +1,29 @@
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+
+
+COHORT_MODE_STRICT_SERIES = "strict_series"
+COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE = "author_diagnostic_slice"
+COHORT_DISJOINT_MODES = (
+    COHORT_MODE_STRICT_SERIES,
+    COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE,
+)
+AUTHOR_DIAGNOSTIC_WARNING = (
+    "Author-style random slice splitting may place adjacent slices from one MRI series in both "
+    "cohorts. It is diagnostic paper-alignment evidence, not final generalization evidence."
+)
+
+
+@dataclass(frozen=True)
+class CohortValidationReport:
+    mode: str
+    train_slices: int
+    validation_slices: int
+    shared_series: tuple[str, ...]
+    final_generalization_evidence: bool
+    warning: str
 
 
 def read_file_list(path: Path) -> list[str]:
@@ -85,8 +108,29 @@ def validate_slice_files(
         )
 
 
-def validate_disjoint_cohorts(train_files: list[str], validation_files: list[str]) -> None:
-    """Prevent the same slice from being used for fitting and validation."""
+def _series_id(filename: str) -> str:
+    """Recover the preprocessing series id from ``<series>_sNNN.npz``."""
+    return filename.removesuffix(".npz").rsplit("_s", 1)[0]
+
+
+def validate_disjoint_cohorts(
+    train_files: list[str],
+    validation_files: list[str],
+    mode: str = COHORT_MODE_STRICT_SERIES,
+) -> CohortValidationReport:
+    """Validate cohort isolation under an explicitly named evidence policy.
+
+    The default protects final generalization claims by rejecting any MRI series
+    shared between fitting and validation.  The author-diagnostic mode relaxes
+    only that series boundary so the public paper's random 2D-slice split can be
+    measured.  It never relaxes exact-slice isolation and its returned report is
+    deliberately marked as unsuitable for final generalization evidence.
+    """
+    if mode not in COHORT_DISJOINT_MODES:
+        raise ValueError(
+            f"Unknown cohort disjoint mode {mode!r}; expected one of {COHORT_DISJOINT_MODES}"
+        )
+
     train_by_normalized = {filename.casefold(): filename for filename in train_files}
     validation_by_normalized = {filename.casefold(): filename for filename in validation_files}
     overlap_keys = sorted(train_by_normalized.keys() & validation_by_normalized.keys())
@@ -100,6 +144,48 @@ def validate_disjoint_cohorts(train_files: list[str], validation_files: list[str
         raise ValueError(
             f"Train and validation file lists overlap on {len(overlap)} slice(s): {preview}{suffix}"
         )
+
+    train_series = {_series_id(filename).casefold(): _series_id(filename) for filename in train_files}
+    validation_series = {
+        _series_id(filename).casefold(): _series_id(filename)
+        for filename in validation_files
+    }
+    shared_series_keys = sorted(train_series.keys() & validation_series.keys())
+    shared_series = tuple(train_series[key] for key in shared_series_keys)
+    if mode == COHORT_MODE_STRICT_SERIES and shared_series:
+        preview = ", ".join(shared_series[:5])
+        suffix = "" if len(shared_series) <= 5 else f" (and {len(shared_series) - 5} more)"
+        raise ValueError(
+            f"Train and validation cohorts share {len(shared_series)} MRI series: {preview}{suffix}"
+        )
+
+    is_author_diagnostic = mode == COHORT_MODE_AUTHOR_DIAGNOSTIC_SLICE
+    return CohortValidationReport(
+        mode=mode,
+        train_slices=len(train_files),
+        validation_slices=len(validation_files),
+        shared_series=shared_series,
+        final_generalization_evidence=not is_author_diagnostic,
+        warning=AUTHOR_DIAGNOSTIC_WARNING if is_author_diagnostic else "",
+    )
+
+
+def write_cohort_validation_report(path: Path, report: CohortValidationReport) -> None:
+    """Persist the evidence policy beside model artifacts before GPU work starts."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rows = [
+        ("cohort_disjoint_mode", report.mode),
+        ("train_slices", str(report.train_slices)),
+        ("validation_slices", str(report.validation_slices)),
+        ("shared_series_count", str(len(report.shared_series))),
+        ("shared_series", ",".join(report.shared_series)),
+        ("final_generalization_evidence", str(report.final_generalization_evidence).lower()),
+        ("warning", report.warning),
+    ]
+    path.write_text(
+        "key\tvalue\n" + "".join(f"{key}\t{value}\n" for key, value in rows),
+        encoding="utf-8",
+    )
 
 
 def exclude_files(derived_files: list[str], explicit_other_cohort: list[str]) -> list[str]:

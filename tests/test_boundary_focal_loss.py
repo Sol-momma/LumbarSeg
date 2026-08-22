@@ -58,6 +58,20 @@ class BoundaryFocalConfigurationTests(unittest.TestCase):
             self.assertIn("focal_canal_boundary_boost\t2.0", contents)
             self.assertIn("keras_jit_compile\tfalse", contents)
 
+    @unittest.skipIf(tf is None, "TensorFlow is available in the WSL training environment")
+    def test_baseline_records_the_same_deterministic_non_xla_path(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "loss_config.tsv"
+            write_loss_config(
+                path,
+                focal_weight=0.6,
+                focal_gamma=4.0,
+                focal_class_weight_mode="none",
+                focal_canal_boundary_boost=0.0,
+            )
+
+            self.assertIn("keras_jit_compile\tfalse", path.read_text(encoding="utf-8"))
+
 
 @unittest.skipIf(tf is None, "TensorFlow is available in the WSL training environment")
 class BoundaryFocalTensorTests(unittest.TestCase):

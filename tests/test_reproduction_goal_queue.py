@@ -23,9 +23,12 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                     #!/usr/bin/env bash
                     set -euo pipefail
                     preset="$1"
-                    printf '%s|%s\\n' "$preset" "${EVAL_FILE_LIST:-baseline}" >> "$CALLS_FILE"
+                    printf '%s|%s|%s\\n' "$preset" "${EVAL_FILE_LIST:-baseline}" "${TRAIN_FILE_LIST:-derived}" >> "$CALLS_FILE"
                     mkdir -p "$OUTPUT_ROOT"
+                    printf 'patient_001_slice_000.npz\\n' > "$OUTPUT_ROOT/train_files.txt"
                     printf 'patient_001_slice_001.npz\\n' > "$OUTPUT_ROOT/validation_files.txt"
+                    printf 'file\\timage_sha256\\tmask_sha256\\npatient_001_slice_000.npz\\timage\\tmask\\n' \
+                      > "$OUTPUT_ROOT/training_cohort.tsv"
                     printf 'file\\timage_sha256\\tmask_sha256\\npatient_001_slice_001.npz\\timage\\tmask\\n' \
                       > "$OUTPUT_ROOT/validation_cohort.tsv"
                     if [[ "$preset" == "t2_space_pass" ]]; then
@@ -51,6 +54,10 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                     "SKIP_ACTIVE_TRAIN_CHECK": "1",
                     "ALLOW_NO_TMUX": "1",
                     "GPU_LOCK_DIR": str(root / "gpu.lock"),
+                    "EXPECTED_TRAIN_COUNT": "1",
+                    "EXPECTED_VALIDATION_COUNT": "1",
+                    "MIN_FREE_BYTES": "0",
+                    "DISABLE_HEARTBEAT": "1",
                 }
             )
             completed = subprocess.run(
@@ -67,12 +74,12 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
             self.assertEqual(
                 calls.read_text(encoding="utf-8").splitlines(),
                 [
-                    "t2_space_4cls090_cap1000|baseline",
-                    f"t2_space_pass|{root / 'campaign' / 'fixed_validation_files.txt'}",
+                    "t2_space_4cls090_cap1000|baseline|derived",
+                    f"t2_space_pass|{root / 'campaign' / 'fixed_validation_files.txt'}|derived",
                 ],
             )
             self.assertEqual(
@@ -100,6 +107,8 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                     "SKIP_ACTIVE_TRAIN_CHECK": "1",
                     "ALLOW_NO_TMUX": "1",
                     "GPU_LOCK_DIR": str(root / "gpu.lock"),
+                    "MIN_FREE_BYTES": "0",
+                    "DISABLE_HEARTBEAT": "1",
                 }
             )
             completed = subprocess.run(
@@ -128,6 +137,8 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                     "CHECKER": str(repo_root / "scripts" / "check_reproduction_target.py"),
                     "ALLOW_NO_TMUX": "1",
                     "GPU_LOCK_DIR": str(lock),
+                    "MIN_FREE_BYTES": "0",
+                    "DISABLE_HEARTBEAT": "1",
                 }
             )
             completed = subprocess.run(
@@ -154,6 +165,8 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                     "CHECKER": str(repo_root / "scripts" / "check_reproduction_target.py"),
                     "ALLOW_NO_TMUX": "1",
                     "GPU_LOCK_DIR": str(root / "gpu.lock"),
+                    "MIN_FREE_BYTES": "0",
+                    "DISABLE_HEARTBEAT": "1",
                 }
             )
             completed = subprocess.run(
@@ -184,6 +197,8 @@ class ReproductionGoalQueueTests(unittest.TestCase):
                     "SKIP_ACTIVE_TRAIN_CHECK": "1",
                     "ALLOW_NO_TMUX": "1",
                     "GPU_LOCK_DIR": str(root / "gpu.lock"),
+                    "MIN_FREE_BYTES": "0",
+                    "DISABLE_HEARTBEAT": "1",
                 }
             )
             completed = subprocess.run(
