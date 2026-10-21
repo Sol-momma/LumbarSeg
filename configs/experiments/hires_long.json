@@ -1,0 +1,13 @@
+{
+  "_doc": "(d) default at 640x800 (from 512x640) with epochs 150 and patience 30. Ground-truth masks are resized to the same resolution, so Dice is measured at 640x800.",
+  "name": "hires_long",
+  "extends": "default",
+  "data": {
+    "target_height": 640,
+    "target_width": 800
+  },
+  "train": {
+    "epochs": 150,
+    "patience": 30
+  }
+}

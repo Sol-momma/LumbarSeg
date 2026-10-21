@@ -1,0 +1,9 @@
+{
+  "_doc": "(a) default + strong on-the-fly augmentation (rotation/scale/shift, gamma, brightness/contrast, noise, blur) on training slices only. Patience 25 because augmented training converges more slowly.",
+  "name": "aug_strong",
+  "extends": "default",
+  "train": {
+    "augment": "strong",
+    "patience": 25
+  }
+}

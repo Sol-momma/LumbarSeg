@@ -1,0 +1,21 @@
+{
+  "_doc": "(b) default + spinal-canal emphasis: focal class weights [bg,vert,canal,ivd]=[0.5,1,3,1], Dice term weights [0,1,2,1] (background ignored), Dice share raised (focal_weight 0.4) and focal_gamma 2.",
+  "name": "canal_weighted",
+  "extends": "default",
+  "train": {
+    "class_weights": [
+      0.5,
+      1,
+      3,
+      1
+    ],
+    "dice_class_weights": [
+      0,
+      1,
+      2,
+      1
+    ],
+    "focal_weight": 0.4,
+    "focal_gamma": 2.0
+  }
+}

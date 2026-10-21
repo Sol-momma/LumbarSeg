@@ -21,7 +21,10 @@
     "focal_gamma": 4.0,
     "patience": 15,
     "monitor": "val_mean_iou",
-    "seed": 42
+    "seed": 42,
+    "augment": "none",
+    "class_weights": null,
+    "dice_class_weights": null
   },
   "eval": {
     "dice_average_unit": "slice",
