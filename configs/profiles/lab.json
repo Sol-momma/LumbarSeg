@@ -1,0 +1,1 @@
+{"_doc": "Lab PC: Windows + WSL2 Ubuntu, RTX 3060 Ti 8GB. Data lives on the Windows C: drive.", "data_root": "/mnt/c/Users/ctlab/somomma/DataSet", "output_root": "~/lumbarseg_runs", "device": "gpu", "gpu_memory_gb": 8}

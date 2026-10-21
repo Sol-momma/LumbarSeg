@@ -226,3 +226,7 @@ If this repository helps your research, please cite the original dataset and bas
 ---
 
 **If LumbarSeg helps your research, please consider starring this repository.**
+
+## Experiment harness
+
+See [HARNESS.md](HARNESS.md): `python -m lumbarseg_cli smoke --download --json` runs data → tiny training → evaluation → metrics JSON in one line; `doctor` checks GPU/data/deps for the box, Colab and the lab PC (WSL2).

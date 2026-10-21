@@ -1,0 +1,34 @@
+{
+  "_doc": "Implementation defaults: reproduce the recorded t2_space_reproduction_4cls090_cap1000_20260711 run (foreground macro Dice 0.8497). See docs/experiments/paper_gap.md.",
+  "name": "default",
+  "data": {
+    "sequences": "T2_SPACE",
+    "target_height": 512,
+    "target_width": 640,
+    "min_classes": 4,
+    "imbalance_threshold": 0.90,
+    "max_slices_per_sequence": 1000,
+    "slice_cap_method": "linspace_sorted",
+    "slice_cap_seed": 42,
+    "split": "overview_csv_subset"
+  },
+  "model": {"input_channels": 1, "num_classes": 4, "dropout_rate": null, "leaky_relu_alpha": 0.1},
+  "train": {
+    "batch_size": 2,
+    "epochs": 100,
+    "learning_rate": 0.0001,
+    "focal_weight": 0.6,
+    "focal_gamma": 4.0,
+    "patience": 15,
+    "monitor": "val_mean_iou",
+    "seed": 42
+  },
+  "eval": {
+    "dice_average_unit": "slice",
+    "include_background": false,
+    "smooth": 1e-7,
+    "surface_inf_policy": "propagate",
+    "nsd_tolerance_mm": 1.0,
+    "headline_metric": "foreground_macro_dice"
+  }
+}

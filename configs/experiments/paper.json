@@ -1,0 +1,13 @@
+{
+  "_doc": "Ahmed et al. (arXiv 2409.06018) settings where the paper states them. Keys in _not_in_paper keep implementation values because the paper does not specify them (論文に記載なし).",
+  "name": "paper",
+  "extends": "default",
+  "data": {"imbalance_threshold": 0.55},
+  "train": {"batch_size": 8, "epochs": 100, "focal_gamma": 0.4, "focal_weight": 0.6, "monitor": "val_mean_iou"},
+  "_not_in_paper": [
+    "data.slice_cap_method", "data.slice_cap_seed", "data.sequences (training)",
+    "train.learning_rate", "train.patience", "train.seed", "augmentation",
+    "eval.dice_average_unit", "eval.include_background (average)", "eval.smooth",
+    "eval.surface_inf_policy", "eval.nsd_tolerance_mm"
+  ]
+}
