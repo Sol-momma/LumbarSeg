@@ -1,7 +1,8 @@
 """nnU-Net v2 2D baseline on exactly the same slices and train/val split as the `default` config.
 
   export  : processed npz slices -> nnUNet_raw/Dataset501_LumbarT2S (one 2D case per slice) + splits_final.json
-  import  : nnU-Net fold_0/validation/*.nii.gz -> <pred_dir>/<slice>.npz (key 'pred')
+  import  : nnU-Net predictions (fold_0/validation or nnUNetv2_predict output) -> <pred_dir>/<slice>.npz (key 'pred')
+With data.inner_val_cases>0 the fixed test cases go to imagesTs only and are scored after nnUNetv2_predict.
 Then score with `python -m lumbarseg_cli evaluate --pred_dir <pred_dir> --file_list validation_files.txt`.
 Spacing is written as 1x1 so nnU-Net trains at the processed resolution (no resampling), like the U-Net.
 """
@@ -26,10 +27,10 @@ def case_id(name: str) -> str:
 def export(a):
     import SimpleITK as sitk
     from lumbarseg_cli import config as cfgmod
-    from lumbarseg_cli.cli import _split
+    from lumbarseg_cli.cli import split_with_test
     cfg = cfgmod.load(a.config, None, a.set)
     proc = Path(cfg["profile"]["output_root"]) / cfg["name"] / "processed"
-    train, val, _ = _split(cfg, proc, Path(cfg["profile"]["data_root"]), None)
+    train, val, test, _ = split_with_test(cfg, proc, Path(cfg["profile"]["data_root"]))
     out = Path(a.raw) / DS
     for sub in ("imagesTr", "labelsTr"):
         (out / sub).mkdir(parents=True, exist_ok=True)
@@ -46,7 +47,14 @@ def export(a):
     Path(a.lists).mkdir(parents=True, exist_ok=True)
     (Path(a.lists) / "train_files.txt").write_text("\n".join(train) + "\n")
     (Path(a.lists) / "validation_files.txt").write_text("\n".join(val) + "\n")
-    print(json.dumps({"train": len(train), "val": len(val), "raw": str(out)}))
+    (Path(a.lists) / "test_files.txt").write_text("\n".join(test) + "\n")
+    if set(test) - set(val):  # test cases outside the nnU-Net split: give nnUNetv2_predict an input folder
+        tdir = Path(a.raw) / DS / "imagesTs"; tdir.mkdir(exist_ok=True)
+        for f in test:  # test slices are kept out of imagesTr so they never enter planning or training
+            img = np.load(proc / "images" / f)["image"].astype(np.float32)
+            im = sitk.GetImageFromArray(img[None]); im.SetSpacing((1.0, 1.0, 1.0))
+            sitk.WriteImage(im, str(tdir / f"{case_id(f)}_0000.nii.gz"))
+    print(json.dumps({"train": len(train), "val": len(val), "test": len(test), "raw": str(out)}))
 
 
 def import_preds(a):

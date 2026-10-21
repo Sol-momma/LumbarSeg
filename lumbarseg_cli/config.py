@@ -106,6 +106,9 @@ def validate(cfg: dict) -> None:
     t, nc = cfg.get("train", {}), cfg.get("model", {}).get("num_classes", 4)
     if t.get("augment", "none") not in ("none", "strong"):
         raise ConfigError(f"train.augment={t.get('augment')!r} is invalid. Next: --set train.augment=none or strong")
+    n = cfg.get("data", {}).get("inner_val_cases", 0)
+    if not isinstance(n, int) or n < 0:
+        raise ConfigError(f"data.inner_val_cases={n!r} is invalid. Next: a non-negative integer, e.g. --set data.inner_val_cases=4")
     for key in ("class_weights", "dice_class_weights"):
         w = t.get(key)
         if w is not None and (not isinstance(w, list) or len(w) != nc or any(not isinstance(x, (int, float)) or x < 0 for x in w)):

@@ -1,0 +1,11 @@
+{
+  "_doc": "Paper (Ahmed et al., arXiv 2409.06018) training settings that can be run as written: batch 8, focal gamma 0.4 (the paper states both 4.0 and 0.4; 0.4 is the value given with alpha), alpha 0.6, 100 epochs, 512x640, early stopping on val mean IoU. The 55% imbalance filter is NOT applied literally: read as 'largest foreground class share > 0.55' it keeps 34 T2 SPACE slices, while the paper reports 1000 T2 SPACE images after filtering. We keep the 1000-slice cap with the implementation threshold 0.90 (removes 2 slices). See docs/experiments/paper_filter_check_20261021.md.",
+  "name": "paper_effective",
+  "extends": "default",
+  "train": {
+    "batch_size": 8,
+    "focal_gamma": 0.4,
+    "focal_weight": 0.6,
+    "epochs": 100
+  }
+}

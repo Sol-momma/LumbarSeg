@@ -10,7 +10,9 @@
     "max_slices_per_sequence": 1000,
     "slice_cap_method": "linspace_sorted",
     "slice_cap_seed": 42,
-    "split": "overview_csv_subset"
+    "split": "overview_csv_subset",
+    "inner_val_cases": 0,
+    "inner_val_seed": 0
   },
   "model": {"input_channels": 1, "num_classes": 4, "dropout_rate": null, "leaky_relu_alpha": 0.1},
   "train": {
