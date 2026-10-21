@@ -94,3 +94,28 @@ class PredDirTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InnerValSplitTest(unittest.TestCase):
+    def test_inner_val_cases_are_disjoint_and_test_is_fixed(self):
+        from lumbarseg_cli import cli
+        from spine_baseline.preprocessing import get_series_id
+        train = [f"{c}_t2_SPACE_s{i:03d}.npz" for c in range(1, 11) for i in range(3)]
+        test = [f"{c}_t2_SPACE_s{i:03d}.npz" for c in range(50, 53) for i in range(3)]
+        orig = cli._split
+        cli._split = lambda cfg, proc, root, smoke: (list(train), list(test), [])
+        try:
+            cfg = cfgmod.load("default", "box", ["data.inner_val_cases=3"])
+            tr, va, te, _ = cli.split_with_test(cfg, Path("."), Path("."))
+            tr2, va2, te2, _ = cli.split_with_test(cfgmod.load("default", "box", ["data.inner_val_cases=3", "train.seed=7"]), Path("."), Path("."))
+            base = cli.split_with_test(cfgmod.load("default", "box"), Path("."), Path("."))
+        finally:
+            cli._split = orig
+        self.assertEqual(te, test)
+        self.assertEqual(len({get_series_id(f) for f in va}), 3)
+        self.assertFalse({get_series_id(f) for f in va} & {get_series_id(f) for f in tr})
+        self.assertEqual(sorted(tr + va), sorted(train))
+        self.assertEqual((tr, va), (tr2, va2))  # training seed does not move the split
+        self.assertEqual(base[1], base[2])  # inner_val_cases=0 keeps val == test
+        with self.assertRaises(cfgmod.ConfigError):
+            cfgmod.load("default", "box", ["data.inner_val_cases=-1"])

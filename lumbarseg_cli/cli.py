@@ -144,18 +144,39 @@ def _split(cfg, proc: Path, data_root: Path, smoke: dict | None):
     return train, val, unmatched
 
 
+def split_with_test(cfg, proc: Path, data_root: Path, smoke: dict | None = None):
+    """(train, early-stopping val, test, unmatched).
+
+    The Overview-CSV validation cases are the fixed test set. With data.inner_val_cases=N>0, N training
+    cases (picked by data.inner_val_seed, independent of train.seed) become the early-stopping set, so
+    the test cases never steer model selection. N=0 keeps the old behaviour (val == test)."""
+    import numpy as np
+    from spine_baseline.preprocessing import get_series_id
+    train, test, unmatched = _split(cfg, proc, data_root, smoke)
+    n = int(cfg["data"].get("inner_val_cases", 0) or 0)
+    if n <= 0:
+        return train, test, test, unmatched
+    cases = sorted({get_series_id(f) for f in train})
+    if n >= len(cases):
+        raise CliError(f"data.inner_val_cases={n} >= {len(cases)} training cases", "Use a smaller --set data.inner_val_cases=4", 2)
+    rng = np.random.default_rng(int(cfg["data"].get("inner_val_seed", 0)))
+    inner = set(rng.choice(cases, n, replace=False).tolist())
+    return [f for f in train if get_series_id(f) not in inner], [f for f in train if get_series_id(f) in inner], test, unmatched
+
+
 def cmd_train(args):
     if args.smoke and args.config == "default":
         args.config = "smoke"
     cfg = load_cfg(args)
     data_root, out, _ = paths(cfg)
     proc = out / "processed"
-    train_files, val_files, unmatched = _split(cfg, proc, data_root, cfg.get("smoke") if args.smoke else None)
+    train_files, val_files, test_files, unmatched = split_with_test(cfg, proc, data_root, cfg.get("smoke") if args.smoke else None)
     if not train_files or not val_files:
         raise CliError(f"Empty split: train={len(train_files)} val={len(val_files)}",
                        "Check data.sequences and that the Overview CSV subset column covers the prepared series.")
     run_dir = out / "run"
-    result = {"command": "train", "smoke": args.smoke, "run_dir": str(run_dir), "train_slices": len(train_files), "val_slices": len(val_files)}
+    result = {"command": "train", "smoke": args.smoke, "run_dir": str(run_dir), "train_slices": len(train_files), "val_slices": len(val_files),
+              "test_slices": len(test_files)}
     if args.dry_run:
         result["dry_run"] = True
         return emit(args, result, f"[dry-run] would train {cfg['train']['epochs']} epoch(s) on {len(train_files)} slices; outputs -> {run_dir}")
@@ -169,7 +190,8 @@ def cmd_train(args):
     t, d, m = cfg["train"], cfg["data"], cfg["model"]
     np.random.seed(t["seed"]); tf.random.set_seed(t["seed"])
     ck = run_dir / "checkpoints"; ck.mkdir(parents=True, exist_ok=True)
-    for name, files in (("train_files.txt", train_files), ("validation_files.txt", val_files), ("unmatched_files.txt", unmatched)):
+    for name, files in (("train_files.txt", train_files), ("validation_files.txt", val_files), ("test_files.txt", test_files),
+                        ("unmatched_files.txt", unmatched)):
         (run_dir / name).write_text("\n".join(files) + "\n")
     (run_dir / "config.json").write_text(json.dumps(cfgmod.public(cfg), indent=2))
     aug = t.get("augment", "none")
@@ -200,7 +222,10 @@ def cmd_evaluate(args):
     proc = Path(args.processed_root) if args.processed_root else out / "processed"
     pred_dir = Path(args.pred_dir) if getattr(args, "pred_dir", None) else None
     model_path = pred_dir if pred_dir else (Path(args.model) if args.model else out / "run" / "checkpoints" / "best_model.keras")
-    file_list = Path(args.file_list) if args.file_list else out / "run" / "validation_files.txt"
+    default_list = out / "run" / "test_files.txt"
+    if not default_list.is_file():
+        default_list = out / "run" / "validation_files.txt"
+    file_list = Path(args.file_list) if args.file_list else default_list
     for pth, hint in ((model_path, "Train first (`train --smoke`), pass --model PATH.keras, or --pred_dir with <slice>.npz label maps"),
                       (file_list, "Pass --file_list with the frozen validation cohort (one .npz name per line)."),
                       (proc, "Run prepare-data first or pass --processed_root.")):
@@ -418,7 +443,7 @@ def build_parser():
     s = sub.add_parser("evaluate", parents=[common], formatter_class=fmt, help="evaluate a model and append to experiments/results.jsonl",
                        description="Counting rules come from config.eval (dice_average_unit, include_background, surface_inf_policy) and are\nrecorded with commit, config, split hash and metrics in results.jsonl. See README_HARNESS.md.")
     s.add_argument("--model", help="path to .keras (default: <output>/run/checkpoints/best_model.keras)")
-    s.add_argument("--file_list", help="frozen validation cohort (default: <output>/run/validation_files.txt)")
+    s.add_argument("--file_list", help="frozen evaluation cohort (default: <output>/run/test_files.txt, else validation_files.txt)")
     s.add_argument("--processed_root", help="directory with images/ and masks/ npz (default: <output>/processed)")
     s.add_argument("--pred_dir", help="score saved label maps (<slice>.npz, key 'pred') instead of a Keras model, e.g. nnU-Net output")
     s.add_argument("--limit", type=int, help="evaluate only the first N slices (quick check; recorded in split.limit)")
