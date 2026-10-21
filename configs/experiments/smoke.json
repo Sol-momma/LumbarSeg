@@ -1,0 +1,8 @@
+{
+  "_doc": "Tiny CPU end-to-end check. Numbers from this config prove the pipeline runs, never accuracy.",
+  "name": "smoke",
+  "extends": "default",
+  "data": {"target_height": 128, "target_width": 160, "max_slices_per_sequence": 1000},
+  "train": {"epochs": 1, "batch_size": 2, "patience": 1},
+  "smoke": {"train_slices": 8, "val_slices": 4}
+}

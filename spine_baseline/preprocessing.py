@@ -213,6 +213,8 @@ def filter_slices(
     min_classes: int,
     imbalance_threshold: float,
     max_slices_per_sequence: int | None = 1000,
+    cap_method: str = "linspace_sorted",
+    cap_seed: int = 42,
 ) -> tuple[list[str], dict]:
     mask_dir = output_root / "masks"
     eligible_rows = []
@@ -267,8 +269,16 @@ def filter_slices(
     for sequence, items in grouped.items():
         if max_slices_per_sequence is None or len(items) <= max_slices_per_sequence:
             selected_indices = set(range(len(items)))
-        else:
+        elif cap_method == "linspace_sorted":
+            # Recorded runs (0.8497) used evenly spaced picks over filename order.
             selected_indices = set(np.linspace(0, len(items) - 1, max_slices_per_sequence, dtype=int))
+        elif cap_method == "random":
+            # The paper does not say how its 1000 slices were chosen; keep a
+            # seeded alternative so the choice is an explicit experiment input.
+            rng = np.random.default_rng(cap_seed)
+            selected_indices = set(rng.choice(len(items), max_slices_per_sequence, replace=False).tolist())
+        else:
+            raise ValueError(f"Unknown cap_method: {cap_method!r} (use linspace_sorted or random)")
 
         for index, (filename, row) in enumerate(items):
             if index not in selected_indices:
