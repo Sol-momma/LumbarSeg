@@ -14,6 +14,7 @@
 - [Paper reproduction audit - 2026-06-28](reproduction_audit_20260628.md)
 - [Full dataset paper reproduction audit - 2026-06-29](reproduction_audit_full_20260629.md)
 - [T2 SPACE reproduction metrics - 2026-07-11](t2_space_reproduction_4cls090_cap1000_20260711/validation_metrics.csv)
+- [RunPod 4090: T2 SPACE 5 conditions + Dice averaging unit × split - 2026-10-21](runpod_t2_space_20261021.md)
 
 ## Automation
 
