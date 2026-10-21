@@ -1,0 +1,1 @@
+{"_doc": "Shared Linux box, CPU only.", "data_root": "/workspace/lumbarseg-data/DataSet", "output_root": "/workspace/lumbarseg-data/runs", "device": "cpu"}

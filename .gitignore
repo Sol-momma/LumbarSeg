@@ -46,3 +46,7 @@ CLAUDE.md
 
 # Local experiment notebooks (Colab commands are in README)
 *.ipynb
+
+# Harness local artifacts
+.venv/
+experiments/*.local.jsonl
