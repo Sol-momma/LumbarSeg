@@ -15,18 +15,23 @@ def focal_loss(y_true, y_pred, gamma: float = 4.0, class_weights=None):
     return tf.reduce_mean(tf.reduce_sum(focal, axis=-1))
 
 
-def dice_loss(y_true, y_pred, epsilon: float = 1e-6):
+def dice_loss(y_true, y_pred, epsilon: float = 1e-6, class_weights=None):
     numerator = 2.0 * tf.reduce_sum(y_true * y_pred, axis=(1, 2)) + epsilon
     denominator = tf.reduce_sum(y_true + y_pred, axis=(1, 2)) + epsilon
     dice = numerator / denominator
-    return 1.0 - tf.reduce_mean(dice)
+    if class_weights is None:
+        return 1.0 - tf.reduce_mean(dice)
+    w = tf.reshape(tf.cast(class_weights, dice.dtype), (1, -1))
+    return 1.0 - tf.reduce_mean(tf.reduce_sum(dice * w, axis=-1) / tf.reduce_sum(w))
 
 
-def combined_loss(alpha: float = 0.6, gamma: float = 4.0, class_weights=None):
+def combined_loss(alpha: float = 0.6, gamma: float = 4.0, class_weights=None, dice_class_weights=None):
+    """alpha*focal + (1-alpha)*Dice. class_weights scale focal per class; dice_class_weights weight the
+    per-class Dice average. Both None = original behaviour."""
     def loss_fn(y_true, y_pred):
         return alpha * focal_loss(y_true, y_pred, gamma=gamma, class_weights=class_weights) + (
             1.0 - alpha
-        ) * dice_loss(y_true, y_pred)
+        ) * dice_loss(y_true, y_pred, class_weights=dice_class_weights)
 
     loss_fn.__name__ = "combined_loss"
     return loss_fn

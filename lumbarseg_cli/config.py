@@ -103,6 +103,13 @@ def validate(cfg: dict) -> None:
         val = cfg.get(sec, {}).get(key)
         if val not in allowed:
             raise ConfigError(f"{sec}.{key}={val!r} is invalid. Next: choose one of {sorted(allowed)} via --set {sec}.{key}=...")
+    t, nc = cfg.get("train", {}), cfg.get("model", {}).get("num_classes", 4)
+    if t.get("augment", "none") not in ("none", "strong"):
+        raise ConfigError(f"train.augment={t.get('augment')!r} is invalid. Next: --set train.augment=none or strong")
+    for key in ("class_weights", "dice_class_weights"):
+        w = t.get(key)
+        if w is not None and (not isinstance(w, list) or len(w) != nc or any(not isinstance(x, (int, float)) or x < 0 for x in w)):
+            raise ConfigError(f"train.{key}={w!r} is invalid. Next: null or a list of {nc} non-negative numbers, e.g. --set 'train.{key}=[1,1,3,1]'")
     if not isinstance(cfg["eval"].get("include_background"), bool):
         raise ConfigError("eval.include_background must be true/false. Next: --set eval.include_background=false")
 
