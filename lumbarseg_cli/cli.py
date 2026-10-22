@@ -156,11 +156,17 @@ def split_with_test(cfg, proc: Path, data_root: Path, smoke: dict | None = None)
     n = int(cfg["data"].get("inner_val_cases", 0) or 0)
     if n <= 0:
         return train, test, test, unmatched
-    cases = sorted({get_series_id(f) for f in train})
-    if n >= len(cases):
-        raise CliError(f"data.inner_val_cases={n} >= {len(cases)} training cases", "Use a smaller --set data.inner_val_cases=4", 2)
-    rng = np.random.default_rng(int(cfg["data"].get("inner_val_seed", 0)))
-    inner = set(rng.choice(cases, n, replace=False).tolist())
+    from spine_baseline.preprocessing import classify_sequence
+    by_seq: dict[str, list[str]] = {}
+    for c in sorted({get_series_id(f) for f in train}):
+        by_seq.setdefault(classify_sequence(c), []).append(c)
+    inner = set()
+    for seq in sorted(by_seq):  # N cases per sequence; with one sequence this is the original single draw
+        cases = by_seq[seq]
+        if n >= len(cases):
+            raise CliError(f"data.inner_val_cases={n} >= {len(cases)} training cases of {seq}", "Use a smaller --set data.inner_val_cases=4", 2)
+        rng = np.random.default_rng(int(cfg["data"].get("inner_val_seed", 0)))
+        inner |= set(rng.choice(cases, n, replace=False).tolist())
     return [f for f in train if get_series_id(f) not in inner], [f for f in train if get_series_id(f) in inner], test, unmatched
 
 
@@ -196,7 +202,8 @@ def cmd_train(args):
     (run_dir / "config.json").write_text(json.dumps(cfgmod.public(cfg), indent=2))
     aug = t.get("augment", "none")
     mk = lambda f, s: create_dataset(f, proc, d["target_height"], d["target_width"], m["num_classes"], t["batch_size"], shuffle=s,
-                                     augment=aug if s else "none", seed=t["seed"])
+                                     augment=aug if s else "none", seed=t["seed"],
+                                     augment_workers=int(t.get("augment_workers", 1)))
     model = build_modified_unet(input_shape=(d["target_height"], d["target_width"], m["input_channels"]), num_classes=m["num_classes"],
                                 dropout_rate=m["dropout_rate"], leaky_relu_alpha=m["leaky_relu_alpha"])
     model.compile(optimizer=keras.optimizers.Adam(t["learning_rate"]), loss=combined_loss(t["focal_weight"], t["focal_gamma"],
@@ -232,6 +239,11 @@ def cmd_evaluate(args):
         if not pth.exists():
             raise CliError(f"Not found: {pth}", hint, 3)
     files = [l for l in file_list.read_text().splitlines() if l]
+    if getattr(args, "sequence", None):
+        from spine_baseline.preprocessing import classify_sequence, get_series_id as _sid
+        files = [f for f in files if classify_sequence(_sid(f)) == args.sequence]
+        if not files:
+            raise CliError(f"No slices of {args.sequence} in {file_list}", "Check --sequence (T1, T2, T2_SPACE).", 2)
     if args.limit:
         files = files[: args.limit]
     import numpy as np
@@ -265,7 +277,8 @@ def cmd_evaluate(args):
               "commit": g["commit"], "dirty": g["dirty"], "profile": cfg["profile"]["name"], "model": str(model_path),
               "config": cfgmod.public({k: v for k, v in cfg.items() if k != "profile"}),
               "split": {"validation_list": str(file_list), "n_slices": len(files), "n_cases": metrics["n_cases"],
-                        "sha256": sha256_lines(files), "limit": args.limit},
+                        "sha256": sha256_lines(files), "limit": args.limit,
+                        "sequence": getattr(args, "sequence", None)},
               "metrics": metrics}
     if args.no_record:
         record["recorded"] = False
@@ -445,6 +458,7 @@ def build_parser():
     s.add_argument("--model", help="path to .keras (default: <output>/run/checkpoints/best_model.keras)")
     s.add_argument("--file_list", help="frozen evaluation cohort (default: <output>/run/test_files.txt, else validation_files.txt)")
     s.add_argument("--processed_root", help="directory with images/ and masks/ npz (default: <output>/processed)")
+    s.add_argument("--sequence", choices=["T1", "T2", "T2_SPACE"], help="score only slices of this sequence (per-sequence test)")
     s.add_argument("--pred_dir", help="score saved label maps (<slice>.npz, key 'pred') instead of a Keras model, e.g. nnU-Net output")
     s.add_argument("--limit", type=int, help="evaluate only the first N slices (quick check; recorded in split.limit)")
     s.add_argument("--tag", help="experiment name stored in the record (default: config name)")
