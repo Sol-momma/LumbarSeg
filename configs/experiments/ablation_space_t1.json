@@ -1,0 +1,6 @@
+{
+  "_doc": "baseline_all_series with T2_SPACE + T1 only. See docs/experiments/data_ablation_20261022.md.",
+  "name": "ablation_space_t1",
+  "extends": "baseline_all_series",
+  "data": {"sequences": "T1,T2_SPACE"}
+}

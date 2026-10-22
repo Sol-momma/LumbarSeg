@@ -1,0 +1,6 @@
+{
+  "_doc": "baseline_protocol (T2 SPACE only) with an image-level split: all kept slices pooled and redrawn into train / early-stopping / test with the same sizes as the patient-level split (627 / 103 / 270). Slices of one patient can be in train and test. Compare with the patient-level baseline (case Dice 0.8868). See docs/experiments/data_ablation_20261022.md.",
+  "name": "ablation_image_split",
+  "extends": "baseline_protocol",
+  "data": {"split": "image"}
+}

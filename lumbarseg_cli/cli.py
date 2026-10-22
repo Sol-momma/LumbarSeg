@@ -167,7 +167,21 @@ def split_with_test(cfg, proc: Path, data_root: Path, smoke: dict | None = None)
             raise CliError(f"data.inner_val_cases={n} >= {len(cases)} training cases of {seq}", "Use a smaller --set data.inner_val_cases=4", 2)
         rng = np.random.default_rng(int(cfg["data"].get("inner_val_seed", 0)))
         inner |= set(rng.choice(cases, n, replace=False).tolist())
-    return [f for f in train if get_series_id(f) not in inner], [f for f in train if get_series_id(f) in inner], test, unmatched
+    tr, va = [f for f in train if get_series_id(f) not in inner], [f for f in train if get_series_id(f) in inner]
+    d = cfg["data"]
+    if d.get("split", "overview_csv_subset") == "image":
+        # Image-level split (as many papers do): pool every kept slice and redraw train / early-stopping / test
+        # with the same sizes as the patient-level split. Slices of one patient may land in several sets.
+        pool = sorted(tr + va + test)
+        perm = np.random.default_rng(int(d.get("inner_val_seed", 0))).permutation(len(pool))
+        pool = [pool[i] for i in perm]
+        test, va, tr = sorted(pool[:len(test)]), sorted(pool[len(test):len(test) + len(va)]), sorted(pool[len(test) + len(va):])
+    m = int(d.get("max_train_slices", 0) or 0)
+    if 0 < m < len(tr):
+        # Same amount, more variety: random subset of the pooled training slices (all sequences), fixed seed.
+        keep = np.random.default_rng(int(d.get("train_subsample_seed", 0))).choice(len(tr), m, replace=False)
+        tr = sorted(tr[i] for i in keep)
+    return tr, va, test, unmatched
 
 
 def cmd_train(args):

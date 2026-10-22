@@ -95,6 +95,7 @@ ALLOWED = {
     ("eval", "dice_average_unit"): {"slice", "case", "pixel"},
     ("eval", "surface_inf_policy"): {"propagate", "exclude", "max_distance"},
     ("data", "slice_cap_method"): {"linspace_sorted", "random"},
+    ("data", "split"): {"overview_csv_subset", "image"},
 }
 
 
@@ -109,6 +110,9 @@ def validate(cfg: dict) -> None:
     n = cfg.get("data", {}).get("inner_val_cases", 0)
     if not isinstance(n, int) or n < 0:
         raise ConfigError(f"data.inner_val_cases={n!r} is invalid. Next: a non-negative integer, e.g. --set data.inner_val_cases=4")
+    m = cfg.get("data", {}).get("max_train_slices", 0)
+    if not isinstance(m, int) or m < 0:
+        raise ConfigError(f"data.max_train_slices={m!r} is invalid. Next: 0 (no limit) or a positive integer, e.g. --set data.max_train_slices=627")
     for key in ("class_weights", "dice_class_weights"):
         w = t.get(key)
         if w is not None and (not isinstance(w, list) or len(w) != nc or any(not isinstance(x, (int, float)) or x < 0 for x in w)):
