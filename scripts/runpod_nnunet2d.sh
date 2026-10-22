@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nnU-Net v2 2D on the harness split. Runs inside a GPU pod from the repo root.
-# env: OUT (run dir), LUMBARSEG_* exported, NNUNET_TRAINER (default nnUNetTrainer_100epochs),
+# env: EVAL_SEQS (optional, per-sequence scoring), OUT (run dir), LUMBARSEG_* exported, NNUNET_TRAINER (default nnUNetTrainer_100epochs),
 #      NNUNET_CONFIG (harness config for the split, default "default"), NNUNET_SETS (extra --set, space separated),
 #      NNUNET_TAG (record tag, default nnunet2d)
 set -euo pipefail
@@ -23,7 +23,9 @@ if [ -d $nnUNet_raw/Dataset501_LumbarT2S/imagesTs ]; then
   V=$OUT/nnunet_test
 else V=$R/fold_0/validation; fi
 python scripts/nnunet2d.py import --val_dir $V --file_list $OUT/run/test_files.txt --pred_dir $OUT/nnunet_pred
+# EVAL_SEQS="T1 T2 T2_SPACE" scores each sequence separately; empty = all test slices together
+for q in ${EVAL_SEQS:-ALL}; do QA=(); [ "$q" != ALL ] && QA=(--sequence $q)
 for u in slice case pixel; do
   python -m lumbarseg_cli evaluate --config "$CFG" "${SETS[@]}" --set eval.dice_average_unit=$u --pred_dir $OUT/nnunet_pred \
-    --file_list $OUT/run/test_files.txt --tag "$TAG|test|$u" --json > $OUT/eval_$u.json
-done
+    --file_list $OUT/run/test_files.txt "${QA[@]}" --tag "$TAG|test|$q|$u" --json > $OUT/eval_${q}_$u.json
+done; done

@@ -119,3 +119,54 @@ class InnerValSplitTest(unittest.TestCase):
         self.assertEqual(base[1], base[2])  # inner_val_cases=0 keeps val == test
         with self.assertRaises(cfgmod.ConfigError):
             cfgmod.load("default", "box", ["data.inner_val_cases=-1"])
+
+
+class AllSeriesTest(unittest.TestCase):
+    def test_inner_val_is_per_sequence(self):
+        from lumbarseg_cli import cli
+        from spine_baseline.preprocessing import classify_sequence, get_series_id
+        train = [f"{c}_{q}_s{i:03d}.npz" for q in ("t1", "t2", "t2_SPACE") for c in range(1, 11) for i in range(2)]
+        orig = cli._split
+        cli._split = lambda cfg, proc, root, smoke: (list(train), ["99_t1_s000.npz"], [])
+        try:
+            tr, va, te, _ = cli.split_with_test(cfgmod.load("baseline_all_series", "box"), Path("."), Path("."))
+        finally:
+            cli._split = orig
+        per = {}
+        for f in va:
+            per.setdefault(classify_sequence(get_series_id(f)), set()).add(get_series_id(f))
+        self.assertEqual({k: len(v) for k, v in per.items()}, {"T1": 4, "T2": 4, "T2_SPACE": 4})
+        self.assertFalse(set(map(get_series_id, va)) & set(map(get_series_id, tr)))
+
+    def test_configs(self):
+        b = cfgmod.load("baseline_all_series", "box"); a = cfgmod.load("aug_all_series", "box")
+        self.assertEqual(b["data"]["sequences"], "T1,T2,T2_SPACE")
+        self.assertEqual((b["data"]["imbalance_threshold"], b["data"]["max_slices_per_sequence"]), (0.90, 1000))
+        for sec in ("data", "model", "eval"):
+            self.assertEqual(a[sec], b[sec])
+        self.assertEqual(a["train"]["augment"], "strong")
+
+    def test_parallel_augmentation_is_reproducible(self):
+        from spine_baseline.dataset import create_dataset
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "images").mkdir(); (d / "masks").mkdir(); names = []
+            for i in range(6):
+                img, oh = _sample(); n = f"{i}_t1_s000.npz"; names.append(n)
+                np.savez(d / "images" / n, image=img[..., 0]); np.savez(d / "masks" / n, mask=oh.argmax(-1).astype(np.uint8))
+            run = lambda: np.concatenate([x.numpy() for x, _ in create_dataset(names, d, 64, 80, 4, 2, False, "strong", 7, 4)])
+            np.testing.assert_array_equal(run(), run())
+
+    def test_evaluate_sequence_filter(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); proc = d / "p"; (proc / "images").mkdir(parents=True); (proc / "masks").mkdir(); (d / "pred").mkdir()
+            names = []
+            for q in ("t1", "t2", "t2_SPACE"):
+                img, oh = _sample(); lab = oh.argmax(-1).astype(np.uint8); n = f"5_{q}_s000.npz"; names.append(n)
+                np.savez(proc / "images" / n, image=img[..., 0], spacing=np.array([1.0, 1.0])); np.savez(proc / "masks" / n, mask=lab)
+                np.savez(d / "pred" / n, pred=lab)
+            (d / "l.txt").write_text("\n".join(names) + "\n")
+            r = subprocess.run([sys.executable, "-m", "lumbarseg_cli", "evaluate", "--profile", "box", "--pred_dir", str(d / "pred"), "--sequence", "T2",
+                                "--file_list", str(d / "l.txt"), "--processed_root", str(proc), "--no-record", "--json"], cwd=REPO, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            rec = json.loads(r.stdout)
+            self.assertEqual((rec["split"]["n_slices"], rec["split"]["sequence"]), (1, "T2"))

@@ -1,0 +1,8 @@
+{
+  "_doc": "baseline_protocol on all three sequences (T1, T2, T2_SPACE): one model trained on the pooled slices, A90 filter (imbalance 0.90) + cap 1000 slices per sequence, fixed per-sequence test = Overview CSV validation cases, early stopping on 4 training cases per sequence, case Dice reported per sequence (evaluate --sequence). See docs/experiments/baseline_protocol.md and all_series_baseline_20261022.md.",
+  "name": "baseline_all_series",
+  "extends": "baseline_protocol",
+  "data": {
+    "sequences": "T1,T2,T2_SPACE"
+  }
+}

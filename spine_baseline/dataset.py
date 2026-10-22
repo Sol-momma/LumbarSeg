@@ -56,9 +56,12 @@ def augment_sample(image: np.ndarray, mask_onehot: np.ndarray, rng: np.random.Ge
 
 def create_dataset(file_list: list[str], output_root: Path, target_height: int, target_width: int,
                    num_classes: int, batch_size: int, shuffle: bool, augment: str = "none",
-                   seed: int = 42) -> tf.data.Dataset:
+                   seed: int = 42, augment_workers: int = 1) -> tf.data.Dataset:
     if not file_list:
         raise ValueError("file_list is empty")
+    if augment != "none" and augment_workers > 1:
+        return _create_parallel_augmented(file_list, output_root, target_height, target_width, num_classes,
+                                          batch_size, shuffle, augment, seed, augment_workers)
 
     rng = np.random.default_rng(seed)
 
@@ -78,3 +81,31 @@ def create_dataset(file_list: list[str], output_root: Path, target_height: int, 
         ),
     )
     return dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+
+
+def _create_parallel_augmented(file_list, output_root, target_height, target_width, num_classes, batch_size,
+                               shuffle, augment, seed, workers):
+    """Same augmentation, run in `workers` parallel calls. Each sample gets its own seed drawn in order from
+    default_rng(seed), and map(deterministic=True) keeps the order, so a run is reproducible. The random
+    stream differs from the single-worker path, so results are not bit-identical to augment_workers=1."""
+    seeds = np.random.default_rng(seed)
+
+    def generator():
+        indices = np.arange(len(file_list))
+        if shuffle:
+            np.random.shuffle(indices)
+        for index in indices:
+            yield int(index), int(seeds.integers(0, 2**63 - 1))
+
+    def load_aug(index, sample_seed):
+        image, mask = load_sample(file_list[int(index)], output_root, num_classes)
+        return augment_sample(image, mask, np.random.default_rng(int(sample_seed)), augment)
+
+    def tf_load(index, sample_seed):
+        image, mask = tf.numpy_function(load_aug, [index, sample_seed], [tf.float32, tf.float32])
+        image.set_shape((target_height, target_width, 1)); mask.set_shape((target_height, target_width, num_classes))
+        return image, mask
+
+    ds = tf.data.Dataset.from_generator(generator, output_signature=(tf.TensorSpec((), tf.int64), tf.TensorSpec((), tf.int64)))
+    ds = ds.map(tf_load, num_parallel_calls=workers, deterministic=True)
+    return ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)

@@ -1,0 +1,10 @@
+{
+  "_doc": "baseline_all_series + strong augmentation (same transforms as aug_strong, patience 25), augmentation run in 8 parallel workers.",
+  "name": "aug_all_series",
+  "extends": "baseline_all_series",
+  "train": {
+    "augment": "strong",
+    "patience": 25,
+    "augment_workers": 8
+  }
+}
