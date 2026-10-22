@@ -144,6 +144,32 @@ def _split(cfg, proc: Path, data_root: Path, smoke: dict | None):
     return train, val, unmatched
 
 
+def patient_id(series_id: str) -> str:
+    """SPIDER series names are '<patient>_<sequence>' (e.g. '12_t2_SPACE')."""
+    return series_id.split("_", 1)[0]
+
+
+def kfold_assign(patients, n_folds: int, seed: int) -> dict:
+    """patient -> fold. Sorted, shuffled with a fixed seed, dealt round-robin (fold sizes differ by <= 1)."""
+    import numpy as np
+    ps = sorted(set(patients))
+    if n_folds < 2 or n_folds > len(ps):
+        raise CliError(f"data.n_folds={n_folds} invalid for {len(ps)} patients", "Use 2 <= n_folds <= number of patients.", 2)
+    order = np.random.default_rng(seed).permutation(len(ps))
+    return {ps[j]: k % n_folds for k, j in enumerate(order)}
+
+
+def kfold_split(files, n_folds: int, fold: int, seed: int):
+    """Patient-level k-fold over all slices (Overview subsets pooled): (train, test) for one fold."""
+    from spine_baseline.preprocessing import get_series_id
+    if not 0 <= fold < n_folds:
+        raise CliError(f"data.fold={fold} not in [0, {n_folds})", "Pass --set data.fold=0..n_folds-1", 2)
+    fa = kfold_assign([patient_id(get_series_id(f)) for f in files], n_folds, seed)
+    te = sorted(f for f in files if fa[patient_id(get_series_id(f))] == fold)
+    tr = sorted(f for f in files if fa[patient_id(get_series_id(f))] != fold)
+    return tr, te
+
+
 def split_with_test(cfg, proc: Path, data_root: Path, smoke: dict | None = None):
     """(train, early-stopping val, test, unmatched).
 
@@ -153,6 +179,9 @@ def split_with_test(cfg, proc: Path, data_root: Path, smoke: dict | None = None)
     import numpy as np
     from spine_baseline.preprocessing import get_series_id
     train, test, unmatched = _split(cfg, proc, data_root, smoke)
+    if cfg["data"].get("split") == "patient_kfold":
+        train, test = kfold_split(train + test, int(cfg["data"].get("n_folds", 5)), int(cfg["data"].get("fold", 0)),
+                                  int(cfg["data"].get("kfold_seed", 0)))
     n = int(cfg["data"].get("inner_val_cases", 0) or 0)
     if n <= 0:
         return train, test, test, unmatched
@@ -221,7 +250,10 @@ def cmd_train(args):
     model = build_modified_unet(input_shape=(d["target_height"], d["target_width"], m["input_channels"]), num_classes=m["num_classes"],
                                 dropout_rate=m["dropout_rate"], leaky_relu_alpha=m["leaky_relu_alpha"])
     model.compile(optimizer=keras.optimizers.Adam(t["learning_rate"]), loss=combined_loss(t["focal_weight"], t["focal_gamma"],
-                                                                                     t.get("class_weights"), t.get("dice_class_weights")),
+                                                                                     t.get("class_weights"), t.get("dice_class_weights"),
+                                                                                     boundary_weight=float(t.get("boundary_weight", 0) or 0),
+                                                                                     boundary_class=int(t.get("boundary_class", 3)),
+                                                                                     boundary_kernel=int(t.get("boundary_kernel", 5))),
                   metrics=["accuracy", mean_iou(m["num_classes"]), dice_coefficient(m["num_classes"])])
     mon = t["monitor"]
     cbs = [keras.callbacks.ModelCheckpoint(str(ck / "best_model.keras"), monitor=mon, mode="max", save_best_only=True),
@@ -242,7 +274,13 @@ def cmd_evaluate(args):
     data_root, out, results_path = paths(cfg)
     proc = Path(args.processed_root) if args.processed_root else out / "processed"
     pred_dir = Path(args.pred_dir) if getattr(args, "pred_dir", None) else None
-    model_path = pred_dir if pred_dir else (Path(args.model) if args.model else out / "run" / "checkpoints" / "best_model.keras")
+    model_paths = [Path(p) for p in args.model.split(",")] if (args.model and not pred_dir) else []
+    model_path = pred_dir if pred_dir else (model_paths[0] if model_paths else out / "run" / "checkpoints" / "best_model.keras")
+    if not model_paths:
+        model_paths = [model_path]
+    for extra in model_paths[1:]:
+        if not extra.exists():
+            raise CliError(f"Not found: {extra}", "Every --model path (comma separated) must exist.", 3)
     default_list = out / "run" / "test_files.txt"
     if not default_list.is_file():
         default_list = out / "run" / "validation_files.txt"
@@ -266,7 +304,8 @@ def cmd_evaluate(args):
     from spine_baseline.preprocessing import get_series_id
     from lumbarseg_cli.metrics import aggregate, slice_metrics
     e, nc = cfg["eval"], cfg["model"]["num_classes"]
-    model = None if pred_dir else tf.keras.models.load_model(str(model_path), compile=False)
+    # --model a.keras,b.keras = ensemble: mean of the models' softmax outputs (no extra training)
+    models = [] if pred_dir else [tf.keras.models.load_model(str(p), compile=False) for p in model_paths]
     per = []
     for i, f in enumerate(files):
         img, oh = load_sample(f, proc, nc)
@@ -280,7 +319,7 @@ def cmd_evaluate(args):
             if pred.shape != true.shape:
                 raise CliError(f"{pf} shape {pred.shape} != mask {true.shape}", "Write predictions at the processed resolution.", 2)
         else:
-            pred = np.argmax(model.predict(img[None], verbose=0)[0], -1)
+            pred = np.argmax(np.mean([mdl.predict(img[None], verbose=0)[0] for mdl in models], axis=0), -1)
         per.append({"series": get_series_id(f), "spacing": tuple(map(float, sp)), "shape": true.shape,
                     "classes": slice_metrics(pred, true, sp, nc, e["smooth"], e["nsd_tolerance_mm"])})
         if (i + 1) % 50 == 0:
@@ -288,7 +327,7 @@ def cmd_evaluate(args):
     metrics = aggregate(per, e, nc)
     g = git_info()
     record = {"command": "evaluate", "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"), "experiment": args.tag or cfg["name"],
-              "commit": g["commit"], "dirty": g["dirty"], "profile": cfg["profile"]["name"], "model": str(model_path),
+              "commit": g["commit"], "dirty": g["dirty"], "profile": cfg["profile"]["name"], "model": ",".join(map(str, model_paths)) if not pred_dir else str(model_path),
               "config": cfgmod.public({k: v for k, v in cfg.items() if k != "profile"}),
               "split": {"validation_list": str(file_list), "n_slices": len(files), "n_cases": metrics["n_cases"],
                         "sha256": sha256_lines(files), "limit": args.limit,

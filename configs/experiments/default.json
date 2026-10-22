@@ -12,7 +12,10 @@
     "slice_cap_seed": 42,
     "split": "overview_csv_subset",
     "inner_val_cases": 0,
-    "inner_val_seed": 0
+    "inner_val_seed": 0,
+    "n_folds": 5,
+    "fold": 0,
+    "kfold_seed": 0
   },
   "model": {"input_channels": 1, "num_classes": 4, "dropout_rate": null, "leaky_relu_alpha": 0.1},
   "train": {
@@ -26,7 +29,10 @@
     "seed": 42,
     "augment": "none",
     "class_weights": null,
-    "dice_class_weights": null
+    "dice_class_weights": null,
+    "boundary_weight": 0,
+    "boundary_class": 3,
+    "boundary_kernel": 5
   },
   "eval": {
     "dice_average_unit": "slice",

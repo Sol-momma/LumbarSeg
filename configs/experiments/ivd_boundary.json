@@ -1,0 +1,10 @@
+{
+  "_doc": "IVD boundary emphasis on top of paper_effective: focal term x(1+4) within 2 px of the IVD border (5x5 dilation-erosion). Used for the 5-fold protocol (docs/experiments/eval_protocol.md).",
+  "name": "ivd_boundary",
+  "extends": "paper_effective",
+  "train": {
+    "boundary_weight": 4.0,
+    "boundary_class": 3,
+    "boundary_kernel": 5
+  }
+}
