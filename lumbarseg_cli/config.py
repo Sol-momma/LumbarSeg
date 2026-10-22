@@ -95,7 +95,7 @@ ALLOWED = {
     ("eval", "dice_average_unit"): {"slice", "case", "pixel"},
     ("eval", "surface_inf_policy"): {"propagate", "exclude", "max_distance"},
     ("data", "slice_cap_method"): {"linspace_sorted", "random"},
-    ("data", "split"): {"overview_csv_subset", "image"},
+    ("data", "split"): {"overview_csv_subset", "image", "patient_kfold"},
 }
 
 

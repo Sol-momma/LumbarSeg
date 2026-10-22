@@ -47,3 +47,4 @@ bash scripts/run_reproduction_goal_queue.sh t2_space_4cls090_cap1000
 ```
 
 開始後は`Ctrl-b`、続けて`d`で画面から離れる。再接続は`tmux attach -t lumbarseg-goal`を使う。
+- [eval_protocol.md](eval_protocol.md) — 評価プロトコル（T2 SPACE 患者ごと5分割・症例Dice・Wilcoxon）と費用見積もり（2026-10-23）
