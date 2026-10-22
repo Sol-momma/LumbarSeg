@@ -1,0 +1,34 @@
+{
+  "_doc": "Fixed paper-condition baseline protocol (Ahmed et al., arXiv 2409.06018). Runnable part = paper_effective (measured: case Dice 0.8868 +/- 0.0001, seeds 42/43/44, PR #13). PR #13 ran it with --set data.inner_val_cases=4 and eval.dice_average_unit=case; both are fixed here. Keys starting with '_' are records only and are not used by train/evaluate. See docs/experiments/baseline_protocol.md.",
+  "name": "baseline_protocol",
+  "extends": "paper_effective",
+  "data": {"inner_val_cases": 4, "inner_val_seed": 0},
+  "eval": {"dice_average_unit": "case"},
+  "_protocol": {
+    "paper": "arXiv 2409.06018",
+    "seeds": [42, 43, 44],
+    "primary_metric": {"eval.dice_average_unit": "case", "eval.headline_metric": "foreground_macro_dice"},
+    "test_cases": {
+      "source": "SPIDER Lumbar Spine Segmentation Overview.csv, subset == validation",
+      "t2_SPACE": ["11_t2_SPACE", "35_t2_SPACE", "61_t2_SPACE", "107_t2_SPACE", "118_t2_SPACE", "129_t2_SPACE", "136_t2_SPACE", "152_t2_SPACE", "161_t2_SPACE", "177_t2_SPACE", "234_t2_SPACE"],
+      "t2_SPACE_slices": 270,
+      "t2_SPACE_split_sha256": "357a815553ae090bcc3b7c849cf3ce9b95d26957c5d66b74767a300e9b990af4"
+    },
+    "measured": {
+      "config": "paper_effective",
+      "sequences": "T2_SPACE",
+      "case_dice_per_seed": {"42": 0.8869, "43": 0.8868, "44": 0.8867},
+      "case_dice_mean": 0.8868,
+      "case_dice_sd": 0.0001,
+      "results_jsonl_prefix": "sP|",
+      "commit": "5a3b23d"
+    },
+    "planned_all_series": {
+      "status": "not run (waiting for approval)",
+      "sequences": ["T1", "T2", "T2_SPACE"],
+      "filter": "A90 / C / F reading (keeps almost all 4-class slices) + cap 1000 slices per sequence",
+      "expected_slices_per_sequence": {"T1": 1000, "T2": 1000, "T2_SPACE": 1000},
+      "test_split": "Overview CSV validation cases per sequence (T1 38, T2 38, T2_SPACE 11)"
+    }
+  }
+}
