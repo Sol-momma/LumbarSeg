@@ -1,0 +1,6 @@
+{
+  "_doc": "baseline_all_series, training slices randomly reduced (data.train_subsample_seed 0) to 627 = the T2-SPACE-only training size. Separates amount from variety. Compare with bB (2212 slices, 0.8957) and T2 SPACE only (0.8868) on the T2 SPACE test. See docs/experiments/data_ablation_20261022.md.",
+  "name": "ablation_allseries_627",
+  "extends": "baseline_all_series",
+  "data": {"max_train_slices": 627, "train_subsample_seed": 0}
+}
