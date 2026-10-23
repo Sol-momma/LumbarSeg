@@ -1,8 +1,8 @@
 tensorflow
 SimpleITK
-opencv-python
-numpy
-pandas
+opencv-python==4.10.0.84
+numpy<2
+pandas==2.2.3
 scipy
 scikit-learn
 tqdm
