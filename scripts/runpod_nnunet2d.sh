@@ -6,7 +6,7 @@
 set -euo pipefail
 TR="${NNUNET_TRAINER:-nnUNetTrainer_100epochs}"; CFG="${NNUNET_CONFIG:-default}"; TAG="${NNUNET_TAG:-nnunet2d}"
 SETS=(); for s in ${NNUNET_SETS:-}; do SETS+=(--set "$s"); done
-pip install -q nnunetv2 "tensorflow-cpu==2.17.*"
+pip install -q nnunetv2 "tensorflow-cpu==2.17.*" "numpy<2" "pandas==2.2.3"  # pandas 3 needs numpy>=2, which TF 2.17 cannot use
 export nnUNet_raw=/tmp/nnunet/raw nnUNet_preprocessed=/tmp/nnunet/pre nnUNet_results=$OUT/nnunet_results
 export nnUNet_n_proc_DA=$(( $(nproc) > 10 ? 10 : $(nproc) ))
 rm -rf /tmp/nnunet
