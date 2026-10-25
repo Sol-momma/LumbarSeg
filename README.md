@@ -1,8 +1,10 @@
 # LumbarSeg: Four-Class Lumbar MRI Segmentation
 
+腰椎MRIを4クラス（背景・椎骨・脊柱管・椎間板）に分ける卒業研究のコードです。
+
 ## Graduation Research 2026
 
-[Homepage](https://lumbarseg.github.io/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.detailed.md)
+[Homepage](https://sol-momma.github.io/lumbarseg/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.detailed.md)
 
 ![LumbarSeg overview](https://img.shields.io/badge/Task-Lumbar%20MRI%20Segmentation-blue)
 ![TensorFlow](https://img.shields.io/badge/Framework-TensorFlow%2FKeras-orange)
@@ -230,3 +232,7 @@ If this repository helps your research, please cite the original dataset and bas
 ## Experiment harness
 
 See [HARNESS.md](HARNESS.md): `python -m lumbarseg_cli smoke --download --json` runs data → tiny training → evaluation → metrics JSON in one line; `doctor` checks GPU/data/deps for the box, Colab and the lab PC (WSL2).
+
+## License
+
+No license file yet, so all rights are reserved. The SPIDER dataset and the target paper are under their own terms; see the links at the top.
