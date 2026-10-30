@@ -2,7 +2,7 @@
 
 ## Graduation Research 2026
 
-[Homepage](https://lumbarseg.github.io/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.zh-CN.detailed.md)
+[Homepage](https://lumbarseg.sol-momma.com/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.zh-CN.detailed.md)
 
 LumbarSeg is a research repository for reproducing and improving the Ahmed et al. (2025) lumbar MRI segmentation baseline.
 

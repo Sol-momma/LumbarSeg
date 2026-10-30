@@ -4,7 +4,7 @@
 
 ## Graduation Research 2026
 
-[Homepage](https://sol-momma.github.io/lumbarseg/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.detailed.md)
+[Homepage](https://lumbarseg.sol-momma.com/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.detailed.md)
 
 ![LumbarSeg overview](https://img.shields.io/badge/Task-Lumbar%20MRI%20Segmentation-blue)
 ![TensorFlow](https://img.shields.io/badge/Framework-TensorFlow%2FKeras-orange)

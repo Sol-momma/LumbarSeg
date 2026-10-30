@@ -2,7 +2,7 @@
 
 ## Graduation Research 2026
 
-[Homepage](https://lumbarseg.github.io/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.ja.detailed.md)
+[Homepage](https://lumbarseg.sol-momma.com/) | [Paper](https://www.sciencedirect.com/science/article/pii/S2666827025000180) | [Dataset](https://doi.org/10.5281/zenodo.10159290) | [Detailed README](docs/archive/readme-snapshots/README.ja.detailed.md)
 
 LumbarSeg は、Ahmed et al. (2025) の腰椎 MRI セグメンテーション baseline を再現し、そこから改良するための研究用リポジトリです。
 
