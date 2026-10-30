@@ -1,7 +1,7 @@
 tensorflow
 SimpleITK
 opencv-python==4.10.0.84
-numpy<2
+numpy<3
 pandas==2.2.3
 scipy
 scikit-learn
