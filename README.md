@@ -1,6 +1,8 @@
 # LumbarSeg: Four-Class Lumbar MRI Segmentation
 
-腰椎MRIを4クラス（背景・椎骨・脊柱管・椎間板）に分ける卒業研究のコードです。
+[English](README.md) | [日本語](README.ja.md)
+
+This is graduation-research code that segments lumbar MRI into four classes: background, vertebrae, spinal canal, and intervertebral discs.
 
 ## Graduation Research 2026
 
