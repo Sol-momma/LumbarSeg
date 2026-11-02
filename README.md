@@ -1,6 +1,8 @@
 # LumbarSeg: Four-Class Lumbar MRI Segmentation
 
-腰椎MRIを4クラス（背景・椎骨・脊柱管・椎間板）に分ける卒業研究のコードです。
+[English](README.md) | [日本語](README.ja.md)
+
+This is graduation-research code that segments lumbar MRI into four classes: background, vertebrae, spinal canal, and intervertebral discs.
 
 ## Graduation Research 2026
 
@@ -128,6 +130,20 @@ python train.py \
   --batch_size 2
 ```
 
+### Windows GPU
+
+To run on an NVIDIA GPU on a Windows PC, see [docs/windows_gpu.md](docs/windows_gpu.md). Native Windows GPU support assumes the TensorFlow `2.10` line.
+
+Shortest commands:
+
+```powershell
+git clone https://github.com/Sol-momma/LumbarSeg.git
+cd LumbarSeg
+powershell -ExecutionPolicy Bypass -File scripts\setup_windows_native_gpu.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_windows_smoke.ps1 -DataRoot "D:\SPIDER\DataSet"
+powershell -ExecutionPolicy Bypass -File scripts\run_windows_train.ps1 -DataRoot "D:\SPIDER\DataSet"
+```
+
 ## Training & Evaluation
 
 ### Baseline Training
@@ -149,6 +165,51 @@ python evaluate.py \
   --output_root outputs/t2_space_baseline \
   --model_path outputs/t2_space_baseline/checkpoints/best_model.keras
 ```
+
+### Prediction Visualization
+
+Writes PNGs of the input image, ground-truth mask, predicted mask, and overlay for validation slices.
+
+```bash
+python visualize_predictions.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root outputs/t2_relaxed \
+  --model_path outputs/t2_relaxed/checkpoints/best_model.keras \
+  --sequences T2 \
+  --min_classes 3 \
+  --imbalance_threshold 0.90 \
+  --max_slices_per_sequence 0 \
+  --num_samples 12
+```
+
+Output goes to `outputs/t2_relaxed/predictions/`. Slice Dice for each PNG is saved in `prediction_summary.csv`.
+
+To score the full validation set and inspect the 8 lowest-scoring images for the overall score, vertebrae, spinal canal, and intervertebral discs, run the following.
+
+If the intermediate images have been deleted, regenerate only the validation images from the saved `filtered_files.txt` into another location. This only reads the original MHA files and the file list. It does not change the Google Drive originals or the saved list.
+
+```bash
+python regenerate_selected_slices.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root /path/to/temporary_validation_slices \
+  --file_list /path/to/experiment/filtered_files.txt \
+  --split validation
+```
+
+```bash
+python visualize_predictions.py \
+  --data_root /path/to/SPIDER/DataSet \
+  --output_root /path/to/temporary_validation_slices \
+  --model_path outputs/all_sequences/checkpoints/best_model.keras \
+  --filtered_file_list outputs/all_sequences/filtered_files.txt \
+  --min_classes 4 \
+  --imbalance_threshold 0.90 \
+  --max_slices_per_sequence 1000 \
+  --batch_size 2 \
+  --worst_per_metric 8
+```
+
+`prediction_summary.csv` stores Dice and the ground-truth and predicted region pixel counts for every validation sample. Low-scoring images are split into `worst_dice_mean/`, `worst_dice_vertebrae/`, `worst_dice_spinal_canal/`, and `worst_dice_ivds/`. Rankings are in `worst_case_summary.csv`.
 
 ### Advanced: Key Command Line Arguments
 
@@ -197,6 +258,22 @@ LumbarSeg/
 ├── requirements-baseline.txt
 └── REPOSITORY_SPLIT.md
 ```
+
+## Detailed Notes
+
+The earlier detailed README is archived at [docs/archive/readme-snapshots/README.detailed.md](docs/archive/readme-snapshots/README.detailed.md).
+
+## Experiment Records
+
+Lightweight experiment notes from a local GPU or Colab are stored in [docs/experiments/README.md](docs/experiments/README.md). Model weights and preprocessed slices are not tracked by Git.
+
+## Paper Reproduction
+
+The audit and run plan for fully reproducing the paper's reported Dice is in [PAPER_REPRODUCTION_PLAN.md](PAPER_REPRODUCTION_PLAN.md). Use `audit_reproduction.py` to audit sample counts, filtering, and the split.
+
+## Pull Request Rule
+
+PR descriptions must be in English and include `Why` / `What` / `How`. See [docs/workflow/pr_description.md](docs/workflow/pr_description.md).
 
 ## Acknowledgements
 
