@@ -1,4 +1,4 @@
-tensorflow<2.11
+tensorflow<2.22
 SimpleITK
 opencv-python
 numpy==1.23.5
